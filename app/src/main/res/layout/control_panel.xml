@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:grid="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <android.support.v7.widget.GridLayout
+        android:id="@+id/grid1"
+        android:padding="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        grid:rowCount="2"
+        grid:columnCount="2">
+
+
+        <!-- 1st row -->
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+
+            <EditText
+                android:id="@+id/centerRealTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="numberDecimal|numberSigned"
+
+                android:text="@string/DEFAULT_CENTER_REAL"
+                android:hint="@string/CENTER_REAL_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+
+            <EditText
+                android:id="@+id/centerImageTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="numberDecimal|numberSigned"
+
+                android:text="@string/DEFAULT_CENTER_IMAG"
+                android:hint="@string/CENTER_IMAG_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+
+
+
+        <!-- 2nd row -->
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+
+            <EditText
+                android:id="@+id/edgeLengthTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="numberDecimal"
+
+                android:text="@string/DEFAULT_EDGE_LENGTH"
+                android:hint="@string/EDGE_LENGTH_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+
+            <EditText
+                android:id="@+id/iterationLimitTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="number"
+
+                android:text="@string/DEFAULT_ITERATION_LIMIT"
+                android:hint="@string/ITERATION_LIMIT_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+    </android.support.v7.widget.GridLayout>
+
+    <android.support.v7.widget.GridLayout
+        android:id="@+id/grid2"
+        android:padding="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/grid1"
+        grid:rowCount="4"
+        grid:columnCount="3">
+
+
+
+        <!-- 3th row -->
+
+        <Button
+            android:id="@+id/forwardButton"
+            android:text="@string/FORWARD_BUTTON_TEXT"
+            android:onClick="forwardButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+        <Button
+            android:id="@+id/backButton"
+            android:text="@string/BACK_BUTTON_TEXT"
+            android:onClick="backButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+        <Button
+            android:id="@+id/deleteButton"
+            android:text="@string/DELETE_BUTTON_TEXT"
+            android:onClick="deleteButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+
+        <!-- 4th row -->
+
+        <Button
+            android:id="@+id/homeButton"
+            android:text="@string/HOME_BUTTON_TEXT"
+            android:onClick="homeButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+        <Button
+            android:id="@+id/saveButton"
+            android:text="@string/SAVE_BUTTON_TEXT"
+            android:onClick="saveButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+        <Button
+            android:id="@+id/recordButton"
+            android:enabled="false"
+            android:text="@string/RECORD_BUTTON_TEXT"
+            android:onClick="recordButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+
+        <!-- 5th row -->
+
+        <TextView
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+        <Button
+            android:id="@+id/playButton"
+            android:enabled="false"
+            android:text="@string/PLAY_BUTTON_TEXT"
+            android:onClick="playButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+        <Button
+            android:id="@+id/stopButton"
+            android:enabled="false"
+            android:text="@string/STOP_BUTTON_TEXT"
+            android:onClick="stopButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+
+        <!-- 6th row -->
+        <android.support.design.widget.TextInputLayout
+
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+            <EditText
+                android:id="@+id/frameRateTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="number"
+                android:onClick="updateFrameFields"
+                android:text="@string/DEFAULT_FPS"
+                android:hint="@string/FRAME_RATE_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+
+            <EditText
+                android:id="@+id/recordTimeTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="number"
+                android:onClick="updateFrameFields"
+                android:text="@string/DEFAULT_RECORD_TIME"
+                android:hint="@string/RECORD_TIME_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            grid:layout_columnWeight="1">
+
+            <EditText
+                android:id="@+id/numFramesTextField"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="number"
+
+                android:enabled="false"
+                android:text="@string/DEFAULT_NUM_FRAMES"
+                android:hint="@string/NUM_FRAMES_TEXT"/>
+        </android.support.design.widget.TextInputLayout>
+
+
+
+    </android.support.v7.widget.GridLayout>
+
+
+
+
+
+
+
+</RelativeLayout>
+
