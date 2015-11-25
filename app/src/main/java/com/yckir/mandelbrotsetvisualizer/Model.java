@@ -11,12 +11,12 @@ import android.util.Log;
 public class Model{
     public static String TAG = "MODEL";
     private final double DEFAULT_CENTER_REAL;
-    private final double DEFAULT_CENTER_IMAG;
+    private final double DEFAULT_CENTER_IMAGINARY;
     private final double DEFAULT_EDGE_LENGTH;
     private final int    DEFAULT_ITERATION_LIMIT;
 
     private double mCenterReal;
-    private double mCenterImag;
+    private double mCenterImaginary;
     private double mEdgeLength;
     private int    mIterationLimit;
     private int    mNumPixels;
@@ -26,25 +26,25 @@ public class Model{
 
         Resources resources = context.getResources();
         DEFAULT_CENTER_REAL = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
-        DEFAULT_CENTER_IMAG = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAG ) );
+        DEFAULT_CENTER_IMAGINARY = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
         DEFAULT_EDGE_LENGTH = Double.parseDouble( resources.getString( R.string.DEFAULT_EDGE_LENGTH ) );
         DEFAULT_ITERATION_LIMIT = Integer.parseInt(resources.getString(R.string.DEFAULT_ITERATION_LIMIT));
         mCenterReal = DEFAULT_CENTER_REAL;
-        mCenterImag = DEFAULT_CENTER_IMAG;
+        mCenterImaginary = DEFAULT_CENTER_IMAGINARY;
         mEdgeLength = DEFAULT_EDGE_LENGTH;
         mIterationLimit = DEFAULT_ITERATION_LIMIT;
         mNumPixels=100;
     }
 
 
-    Model( double centerReal, double centerImag, double edgeLength, int iterationLimit , Context context) {
+    Model( double centerReal, double centerImaginary, double edgeLength, int iterationLimit , Context context) {
         Resources resources = context.getResources();
         DEFAULT_CENTER_REAL = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
-        DEFAULT_CENTER_IMAG = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAG ) );
+        DEFAULT_CENTER_IMAGINARY = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
         DEFAULT_EDGE_LENGTH = Double.parseDouble(resources.getString(R.string.DEFAULT_EDGE_LENGTH));
         DEFAULT_ITERATION_LIMIT = Integer.parseInt(resources.getString(R.string.DEFAULT_ITERATION_LIMIT));
         mCenterReal = centerReal;
-        mCenterImag = centerImag;
+        mCenterImaginary = centerImaginary;
         mEdgeLength = edgeLength;
         mIterationLimit = iterationLimit;
         mNumPixels=100;
@@ -52,14 +52,13 @@ public class Model{
 
 
     /**
-     * Determines the color of a pixel on the mandelbrot set
+     * Determines the color of a pixel on the mandelbrot set.
      *
      * @param iterationCount how many iterations were required to determine if the
      *                       point was or wasn't in the mandelbrot set.
      * @return the color of the pixel
      */
     private int getColor( int iterationCount ){
-        //return Utility.getColor( iterationCount, mIterationLimit );
         if(iterationCount==mIterationLimit)
             return Color.BLACK;
 
@@ -125,28 +124,27 @@ public class Model{
      */
     void reset() {
         mCenterReal = DEFAULT_CENTER_REAL;
-        mCenterImag = DEFAULT_CENTER_IMAG;
+        mCenterImaginary = DEFAULT_CENTER_IMAGINARY;
         mEdgeLength = DEFAULT_EDGE_LENGTH;
         mIterationLimit = DEFAULT_ITERATION_LIMIT;
-        // make and publish image
     }
 
 
     /**
-     * Given a pixel on an image with the origin at the top left corner, this function
+     * Given a pixel on an image, this functions re-centers on the pixel and zooms in by a factor
+     * of two.
      *
      * @param x the pixel in x direction that was selected
      * @param y the pixel in y direction that was selected
      */
-    void recenter( int x, int y ) {
-        //Log.v(TAG, "recenter with x = " + x + ", y = " + y);
+    void recenterZoom(int x, int y) {
+        //Log.v(TAG, "recenterZoom with x = " + x + ", y = " + y);
         //Log.v(TAG,this.toString());
         y = mNumPixels - y;
         double dPixels = mNumPixels;
 
-
         mCenterReal += mEdgeLength * ( x / dPixels - 0.5 );
-        mCenterImag += mEdgeLength * ( y / dPixels - 0.5 );
+        mCenterImaginary += mEdgeLength * ( y / dPixels - 0.5 );
         mEdgeLength = mEdgeLength / 2.0;
         //Log.v(TAG, this.toString());
     }
@@ -167,7 +165,7 @@ public class Model{
         double x = mCenterReal - mEdgeLength / 2.0;
         for ( int pixel_x = 0; pixel_x < mNumPixels; pixel_x++, x += delta )
         {
-            double y = mCenterImag - mEdgeLength / 2.0;
+            double y = mCenterImaginary - mEdgeLength / 2.0;
             for ( int pixel_y = 0; pixel_y < mNumPixels; pixel_y++, y += delta )
             {
                 paint.setColor(getColor(getIterationCount(x,y)));
@@ -179,7 +177,16 @@ public class Model{
     }
 
 
-
+    /**
+     * Draw a percent of the image onto the canvas. the percents must follow this rule.
+     * 0 <= startPercent < endPercent <= 100. This function should be used to draw the total
+     * image in parts so that you can know how much progress is being made since the drawing takes
+     * seconds to compleate.
+     *
+     * @param startPercent the portion of the image where the drawing will begin
+     * @param endPercent the portion of the image where the drawing will end.
+     * @param canvas the canvas to be drawn on.
+     */
     void partialDrawCanvas(int startPercent, int endPercent, Canvas canvas){
         //long startTime = System.currentTimeMillis();
 
@@ -200,22 +207,19 @@ public class Model{
         int startX = (int)(startPercent / 100.0 * mNumPixels);
         int endX = (int)(endPercent / 100.0 * mNumPixels) - 1;
 
-        Log.v(TAG,"x = " + startX + ", y = " + endX);
+        //Log.v(TAG,"x = " + startX + ", y = " + endX);
         Paint paint = new Paint();
         double delta = mEdgeLength / mNumPixels;
         double x = mCenterReal - mEdgeLength / 2.0 + delta*startX;
         for ( int pixel_x = startX; pixel_x <= endX; pixel_x++, x += delta )
         {
-            double y = mCenterImag - mEdgeLength / 2.0;
+            double y = mCenterImaginary - mEdgeLength / 2.0;
             for ( int pixel_y = 0; pixel_y < mNumPixels; pixel_y++, y += delta )
             {
                 paint.setColor(getColor(getIterationCount(x,y)));
                 canvas.drawPoint(pixel_x, mNumPixels - 1 - pixel_y, paint);
             }
         }
-
-
-
     }
 
 
@@ -231,7 +235,7 @@ public class Model{
      * @param newCenterImag the y coordinate on the imaginary axis
      */
     void setCenterImag(double newCenterImag) {
-        mCenterImag = newCenterImag;
+        mCenterImaginary = newCenterImag;
     }
 
 
@@ -270,7 +274,7 @@ public class Model{
     /**
      * @return the y coordinate on the imaginary axis
      */
-    double getCenterImag(){	return mCenterImag; }
+    double getCenterImaginary(){	return mCenterImaginary; }
 
 
     /**
@@ -297,7 +301,7 @@ public class Model{
     public String toString() {
         ClassStateString details = new ClassStateString("Model");
         details.addMember("mCenterReal", mCenterReal);
-        details.addMember("mCenterImag", mCenterImag);
+        details.addMember("mCenterImaginary", mCenterImaginary);
         details.addMember("mEdgeLength", mEdgeLength);
         details.addMember("mIterationLimit", mIterationLimit);
         details.addMember("mNumPixels", mNumPixels);

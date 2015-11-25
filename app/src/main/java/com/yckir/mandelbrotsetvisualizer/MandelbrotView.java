@@ -4,50 +4,50 @@ package com.yckir.mandelbrotsetvisualizer;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.ProgressBar;
 
-import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
+import java.lang.ref.WeakReference;
 
 public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callback{
 
     public static final String TAG = "MANDELBROT_VIEW";
-    private int mWidth;
-    private int mHeight;
-    private int mLength;
-    private Paint mBlackPaint;
-    private Paint mRedPaint;
+    private static final int DEFAULT_PROGRESS_PERCENT = 100;
     private Model mModel;
     private SurfaceHolder mHolder;
-    private MaterialProgressBar mProgressBar;
+    private ProgressListener mListener;
+    private MyHandler mMyHandler;
+
+    private int mProgressPercent;
+    private int mWidth;
+    private int mHeight;
+    private int mImageLength;
+
 
     public MandelbrotView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        mBlackPaint= new Paint();
-        mRedPaint= new Paint();
-        mBlackPaint.setColor(Color.BLACK);
-        mRedPaint.setColor(Color.RED);
+        mModel = null;
+        mListener = null;
+        mMyHandler = new MyHandler(this);
 
         mHeight=getHeight();
         mWidth=getWidth();
-        mLength=Math.min(mWidth, mHeight);
-
-        mModel = null;
-        mProgressBar = null;
+        mImageLength=Math.min(mWidth, mHeight);
+        mProgressPercent = DEFAULT_PROGRESS_PERCENT;
 
         mHolder = getHolder();
         mHolder.addCallback(this);
     }
 
 
-    public void setProgressBar(MaterialProgressBar progressBar){
-        Log.v(TAG,"setProgressBar");
-        mProgressBar = progressBar;
+    public void setProgressListener(ProgressListener listener, int progressPercent){
+        mListener = listener;
+        mProgressPercent = progressPercent;
     }
 
 
@@ -63,24 +63,16 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     /**
      * Update the view using the current Model to draw on.
      */
-    public void redraw(long delay){
-        //Canvas canvas = mHolder.lockCanvas();
-        //mModel.drawCanvas(canvas);
-        //mHolder.unlockCanvasAndPost(canvas);
-        DrawingAsyncTask task = new DrawingAsyncTask(mModel, mHolder, mProgressBar, delay);
-        task.execute();
+    public void redraw(){
+        DrawingAsyncTask task = new DrawingAsyncTask(mModel,mListener,mProgressPercent);
+        task.execute(mHolder);
     }
 
-
-    @Override
-    public void draw(Canvas canvas) {
-        super.draw(canvas);
-    }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        mLength=Math.min(getWidth(),getHeight());
-        mModel.setNumPixels(mLength);
+        mImageLength=Math.min(getWidth(),getHeight());
+        mModel.setNumPixels(mImageLength);
         mModel.drawCanvas(canvas);
     }
 
@@ -88,6 +80,9 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.v(TAG,"SurfaceCreated");
+        Canvas canvas = holder.lockCanvas();
+        canvas.drawColor(Color.CYAN);
+        holder.unlockCanvasAndPost(canvas);
     }
 
 
@@ -96,14 +91,10 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         Log.v(TAG,"SurfaceChanged");
         mHeight=height;
         mWidth=width;
-        mLength=Math.min(mWidth,mHeight);
-        mModel.setNumPixels(mLength);
+        mImageLength=Math.min(mWidth,mHeight);
+        mModel.setNumPixels(mImageLength);
 
-        Canvas canvas = holder.lockCanvas();
-        canvas.drawColor(Color.CYAN);
-        holder.unlockCanvasAndPost(canvas);
-
-        redraw(300);
+        mMyHandler.sendEmptyMessageDelayed(0,300);
     }
 
 
@@ -118,7 +109,57 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         ClassStateString state = new ClassStateString(TAG);
         state.addMember("mWidth", mWidth);
         state.addMember("mHeight", mHeight);
-        state.addMember("mLength", mLength);
+        state.addMember("mImageLength", mImageLength);
         return state.getString();
+    }
+
+
+    /**
+     * Listener that will have its methods called while the Mandelbrot image is being constructed.
+     */
+    public interface ProgressListener{
+
+        /**
+         * Called when the the Mandelbrot image is about to be constructed.
+         */
+        void onProgressStart();
+
+
+        /**
+         * Called when progress has been made to the Mandelbrot image.
+         *
+         * @param progress how much total progress in percent has been made.
+         */
+        void onProgressUpdate(int progress);
+
+
+        /**
+         * Called when the Image has finished drawing.
+         */
+        void onProgressFinished();
+    }
+
+
+    /**
+     * Handler that is used to make a delayed call to MandelbrotView.redraw().
+     * This is used to construct the first mandelbrot image when teh activity is started.
+     * The call to redraw must be delayed because otherwise, the AsyncTask requests the canvas
+     * before the surfaceView has finished initializing, causing the main thread to wait.
+     */
+    private static class MyHandler extends Handler{
+
+        private final WeakReference<MandelbrotView> mWeakMandelReference;
+
+        public MyHandler(MandelbrotView view){
+            mWeakMandelReference = new WeakReference<>(view);
+        }
+
+
+        @Override
+        public void handleMessage(Message msg) {
+            MandelbrotView mandelbrotView = mWeakMandelReference.get();
+            if(mandelbrotView != null)
+                mandelbrotView.redraw();
+        }
     }
 }

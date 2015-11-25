@@ -1,48 +1,41 @@
 package com.yckir.mandelbrotsetvisualizer;
 
-import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
 
-public class MandelbrotActivity extends AppCompatActivity implements View.OnTouchListener, View.OnKeyListener{
+public class MandelbrotActivity extends AppCompatActivity implements View.OnTouchListener,
+        View.OnKeyListener, MandelbrotView.ProgressListener{
 
     public static String TAG = "MANDELBROT_ACTIVITY";
 
     private Model model;
-    private GestureDetector mGestureDetector;
-    private ClickListener mClickListener;
-
     private MandelbrotView mMandelbrotView;
-
     private MaterialProgressBar mProgressBar;
 
     private EditText centerRealTextField;
-    private EditText centerImageTextField;
+    private EditText centerImaginaryTextField;
     private EditText edgeLengthTextField;
     private EditText iterationLimitTextField;
     private EditText frameRateTextField;
     private EditText recordTimeTextField;
     private EditText numFramesTextField;
 
-    private Button forwardButton;
-    private Button backButton;
-    private Button deleteButton;
-    private Button homeButton;
-    private Button saveButton;
-    private Button recordButton;
-    private Button playButton;
-    private Button stopButton;
+    //private Button forwardButton;
+    //private Button backButton;
+    //private Button deleteButton;
+    //private Button homeButton;
+    //private Button saveButton;
+    //private Button recordButton;
+    //private Button playButton;
+    //private Button stopButton;
 
 
     @Override
@@ -50,62 +43,41 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mandelbrot);
 
-
-
-        mClickListener = new ClickListener();
-        mGestureDetector = new GestureDetector(this,mClickListener);
-
         mMandelbrotView = (MandelbrotView) findViewById(R.id.mandelbrot_view);
         mProgressBar = (MaterialProgressBar) findViewById(R.id.progress_bar);
 
-        //mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
-        //Log.v(TAG, "is indeterminate = " + mProgressBar.isIndeterminate());
-        //mProgressBar.setIndeterminate(false);
-        //Log.v(TAG, "is indeterminate = " + mProgressBar.isIndeterminate());
-
         centerRealTextField = (EditText) findViewById(R.id.centerRealTextField);
-        centerImageTextField = (EditText) findViewById(R.id.centerImageTextField);
+        centerImaginaryTextField = (EditText) findViewById(R.id.centerImaginaryTextField);
         edgeLengthTextField = (EditText) findViewById(R.id.edgeLengthTextField);
         iterationLimitTextField = (EditText) findViewById(R.id.iterationLimitTextField);
         frameRateTextField = (EditText) findViewById(R.id.frameRateTextField);
         recordTimeTextField = (EditText) findViewById(R.id.recordTimeTextField);
         numFramesTextField = (EditText) findViewById(R.id.numFramesTextField);
 
-        forwardButton = (Button) findViewById(R.id.forwardButton);
-        backButton = (Button) findViewById(R.id.backButton);
-        deleteButton = (Button) findViewById(R.id.deleteButton);
-        homeButton = (Button) findViewById(R.id.homeButton);
-        saveButton = (Button) findViewById(R.id.saveButton);
-        recordButton = (Button) findViewById(R.id.recordButton);
-        playButton = (Button) findViewById(R.id.playButton);
-        stopButton = (Button) findViewById(R.id.stopButton);
-
-
+        //forwardButton = (Button) findViewById(R.id.forwardButton);
+        //backButton = (Button) findViewById(R.id.backButton);
+        //deleteButton = (Button) findViewById(R.id.deleteButton);
+        //homeButton = (Button) findViewById(R.id.homeButton);
+        //saveButton = (Button) findViewById(R.id.saveButton);
+        //recordButton = (Button) findViewById(R.id.recordButton);
+        //playButton = (Button) findViewById(R.id.playButton);
+        //stopButton = (Button) findViewById(R.id.stopButton);
 
         centerRealTextField.setOnKeyListener(this);
-        centerImageTextField.setOnKeyListener(this);
+        centerImaginaryTextField.setOnKeyListener(this);
         edgeLengthTextField.setOnKeyListener(this);
         iterationLimitTextField.setOnKeyListener(this);
-        //frameRateTextField.setOnKeyListener(this);
-        //recordTimeTextField.setOnKeyListener(this);
-        //numFramesTextField.setOnKeyListener(this);
+        frameRateTextField.setOnKeyListener(this);
+        recordTimeTextField.setOnKeyListener(this);
 
         mMandelbrotView.setOnTouchListener(this);
+        mMandelbrotView.setProgressListener(this,5);
 
         model = new Model(this);
         model.setNumPixels(300);
-
         mMandelbrotView.setModel(model);
-
-        mMandelbrotView.setProgressBar(mProgressBar);
-
     }
 
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
 
     public void forwardButtonClick(View view) {
         Log.v(TAG, "forwardButtonClick");
@@ -147,109 +119,12 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     }
 
 
-/*
-    public void centerRealTextFieldEvent(View view) {
-        Log.v(TAG, "centerRealTextFieldEvent");
-        //boolean b =validateDrawingFields();
-        //if(b) {
-        //    updateDrawingFields();
-       // }
-    }
-
-    public void centerImaginaryTextFieldEvent(View view) {
-        Log.v(TAG, "centerImaginaryTextFieldEvent");
-     /*   boolean b =validateDrawingFields();
-        if(b) {
-            updateDrawingFields();
-        }* /
-    }
-
-    public void edgeLengthTextFieldEvent(View view) {
-        Log.v(TAG, "edgeLengthTextFieldEvent");
-       // boolean b =validateDrawingFields();
-       // if(b) {
-       //     updateDrawingFields();
-       // }
-    }
-
-    public void iterationLimitTextFieldEvent(View view) {
-        Log.v(TAG, "iterationLimitTextFieldEvent");
-       /* boolean b =validateDrawingFields();
-        if(b) {
-            updateDrawingFields();
-        }* /
-
-    }
-
-    public void frameRateTextFieldEvent(View view) {
-        Log.v(TAG, "frameRateTextFieldEvent");
-        int fps = Integer.parseInt( frameRateTextField.getText().toString() );
-        int time = Integer.parseInt( recordTimeTextField.getText().toString() );
-
-        numFramesTextField.setText( Integer.toString(fps * time) );
-
-    }
-
-    public void recordTimeTextFieldEvent(View view) {
+    public void updateFrameFields(){
         Log.v(TAG, "recordTimeTextFieldEvent");
         int fps = Integer.parseInt( frameRateTextField.getText().toString() );
-        int time = Integer.parseInt( recordTimeTextField.getText().toString() );
+        int time = Integer.parseInt(recordTimeTextField.getText().toString());
 
         numFramesTextField.setText(Integer.toString(fps * time));
-    }
-*/
-    public void updateFrameFields(View view){
-        Log.v(TAG, "recordTimeTextFieldEvent");
-        int fps = Integer.parseInt( frameRateTextField.getText().toString() );
-        int time = Integer.parseInt( recordTimeTextField.getText().toString() );
-
-        numFramesTextField.setText(Integer.toString(fps * time));
-    }
-
-   // public void numFramesTextFieldEvent(View view) {
-   //     Log.v(TAG, "numFramesTextFieldEvent");
-   // }
-
-    public boolean validateDrawingFields(){
-        boolean b1 = validateRealCoordinate();
-        boolean b2 = validateImagCoordinate();
-        boolean b3 = validateEdgeLengthCoordinate();
-        boolean b4 = validateIterationLimitCoordinate();
-        return (b1 && b2 && b3 && b4);
-
-    }
-
-
-    private boolean validateRealCoordinate() {
-        return true;
-    }
-
-
-    private boolean validateImagCoordinate() {
-        return true;
-    }
-
-
-    private boolean validateEdgeLengthCoordinate() {
-        double value = Double.parseDouble(edgeLengthTextField.getText().toString());
-        if ( value <= 0 ){
-            Log.v(TAG, "error, iteration limit <= 0");
-            //edgeLengthTextField.setText ( Double.toString( model.getEdgeLength() ) );
-            return false;
-        }
-        return true;
-
-    }
-
-
-    private boolean validateIterationLimitCoordinate() {
-        int value = Integer.parseInt( iterationLimitTextField.getText().toString() );
-        if ( value <= 0 ){
-            Log.v(TAG, "error, iteration limit <= 0");
-            //iterationLimitTextField.setText ( Integer.toString( model.getIterationLimit() ) );
-            return false;
-        }
-        return true;
     }
 
 
@@ -261,27 +136,86 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         double coordinateR = Double.parseDouble( centerRealTextField.getText().toString() );
         model.setCenterReal(coordinateR);
 
-        double coordinateI = Double.parseDouble( centerImageTextField.getText().toString() );
+        double coordinateI = Double.parseDouble(centerImaginaryTextField.getText().toString());
         model.setCenterImag(coordinateI);
 
         double edge = Double.parseDouble(edgeLengthTextField.getText().toString());
         model.setEdgeLength(edge);
+        mMandelbrotView.redraw();
+    }
 
-        mMandelbrotView.redraw(0);
-        //centerRealTextField.setText(Double.toString(model.getCenterReal()));
-        //centerImageTextField.setText(Double.toString(model.getCenterImag()));
-        //edgeLengthTextField.setText(Double.toString(model.getEdgeLength()));
-        //iterationLimitTextField.setText(Integer.toString(model.getIterationLimit()));
+
+    public boolean validateFrameFields(){
+        String toastMessage = "";
+        try{
+            int fps = Integer.parseInt(frameRateTextField.getText().toString());
+            if(fps == 0)
+                toastMessage+="Frames Per Second cannot be 0\n";
+        }catch (NumberFormatException e){
+            toastMessage+="invalid format for Frames Per Second\n";
+        }
+
+        try{
+            int time = Integer.parseInt(recordTimeTextField.getText().toString());
+            if(time == 0)
+                toastMessage+="Duration cannot be 0\n";
+        }catch (NumberFormatException e){
+            toastMessage+="invalid format for Duration\n";
+        }
+
+        if(toastMessage.isEmpty())
+            return true;
+
+        Toast.makeText(MandelbrotActivity.this, toastMessage, Toast.LENGTH_SHORT).show();
+        return false;
+
+    }
+
+
+    public boolean validateDrawingFields() {
+        String toastMessage = "";
+
+        try{
+            double centerReal = Double.parseDouble(centerRealTextField.getText().toString());
+        }catch (NumberFormatException e){
+            toastMessage+="invalid format for Real Coordinate\n";
+        }
+
+        try{
+            double centerImag = Double.parseDouble(centerImaginaryTextField.getText().toString());
+        }catch (NumberFormatException e){
+            toastMessage+="invalid format for Imaginary Coordinate\n";
+        }
+
+        try{
+            double edgeLength = Double.parseDouble(edgeLengthTextField.getText().toString());
+            if(edgeLength == 0)
+                toastMessage+="Edge Length cannot be zero\n";
+        }catch (NumberFormatException e){
+            toastMessage+="invalid format for Edge Length\n";
+        }
+
+        try{
+            int iterationLimit = Integer.parseInt(iterationLimitTextField.getText().toString());
+        }catch (NumberFormatException e){
+            toastMessage+="invalid format for Iteration Limit\n";
+        }
+
+
+        if(toastMessage.isEmpty())
+            return true;
+        Toast.makeText(MandelbrotActivity.this, toastMessage, Toast.LENGTH_SHORT).show();
+        return false;
     }
 
 
     public void zoom(double x, double y){
-        model.recenter((int)x,(int)y);
+        model.recenterZoom((int) x, (int) y);
         centerRealTextField.setText(Double.toString(model.getCenterReal()));
-        centerImageTextField.setText(Double.toString(model.getCenterImag()));
+        centerImaginaryTextField.setText(Double.toString(model.getCenterImaginary()));
         edgeLengthTextField.setText(Double.toString(model.getEdgeLength()));
         iterationLimitTextField.setText(Integer.toString(model.getIterationLimit()));
-        mMandelbrotView.redraw(0);
+        mMandelbrotView.redraw();
     }
 
 
@@ -297,33 +231,55 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         return true;
     }
 
+
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
 
-        if( keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP ){
-            Log.v(TAG, "was enter action down");
-            boolean b =validateDrawingFields();
-            if(!b)
-                return false;
+        if( keyCode != KeyEvent.KEYCODE_ENTER || event.getAction() != KeyEvent.ACTION_UP)
+            return false;
+
+        if( v == frameRateTextField || v == recordTimeTextField ) {
+           if(validateFrameFields())
+                updateFrameFields();
+            return false;
+        } else if( validateDrawingFields() )
             updateDrawingFields();
-            View view = this.getCurrentFocus();
-            if (view != null) {
-                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-            }
-            return true;
-        }
+
         return false;
     }
 
-    private class ClickListener extends GestureDetector.SimpleOnGestureListener{
-        public String TAG = "ClickListener";
-        @Override
-        public boolean onSingleTapConfirmed(MotionEvent e) {
-            double x = e.getX();
-            double y = e.getY();
-            Log.v( TAG,"X = " + x + ", Y = " + y );
-            return true;
-        }
+
+    @Override
+    public void onProgressStart() {
+        mProgressBar.setProgress(0);
+        mProgressBar.setVisibility(View.VISIBLE);
+
+        centerRealTextField.setEnabled(false);
+        centerImaginaryTextField.setEnabled(false);
+        edgeLengthTextField.setEnabled(false);
+        iterationLimitTextField.setEnabled(false);
+        frameRateTextField.setEnabled(false);
+        recordTimeTextField.setEnabled(false);
+
+    }
+
+
+    @Override
+    public void onProgressUpdate(int progress) {
+        Log.v(TAG,"progress = " + progress);
+        mProgressBar.setProgress(progress);
+    }
+
+
+    @Override
+    public void onProgressFinished() {
+        mProgressBar.setVisibility(View.GONE);
+        centerRealTextField.setEnabled(true);
+        centerImaginaryTextField.setEnabled(true);
+        edgeLengthTextField.setEnabled(true);
+        iterationLimitTextField.setEnabled(true);
+        frameRateTextField.setEnabled(true);
+        recordTimeTextField.setEnabled(true);
+
     }
 }

@@ -20,14 +20,12 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             grid:layout_columnWeight="1">
-
             <EditText
                 android:id="@+id/centerRealTextField"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="numberDecimal|numberSigned"
-
                 android:text="@string/DEFAULT_CENTER_REAL"
                 android:hint="@string/CENTER_REAL_TEXT"/>
         </android.support.design.widget.TextInputLayout>
@@ -36,15 +34,13 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             grid:layout_columnWeight="1">
-
             <EditText
-                android:id="@+id/centerImageTextField"
+                android:id="@+id/centerImaginaryTextField"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="numberDecimal|numberSigned"
-
-                android:text="@string/DEFAULT_CENTER_IMAG"
+                android:text="@string/DEFAULT_CENTER_IMAGINARY"
                 android:hint="@string/CENTER_IMAG_TEXT"/>
         </android.support.design.widget.TextInputLayout>
 
@@ -57,14 +53,12 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             grid:layout_columnWeight="1">
-
             <EditText
                 android:id="@+id/edgeLengthTextField"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="numberDecimal"
-
                 android:text="@string/DEFAULT_EDGE_LENGTH"
                 android:hint="@string/EDGE_LENGTH_TEXT"/>
         </android.support.design.widget.TextInputLayout>
@@ -73,14 +67,12 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             grid:layout_columnWeight="1">
-
             <EditText
                 android:id="@+id/iterationLimitTextField"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="number"
-
                 android:text="@string/DEFAULT_ITERATION_LIMIT"
                 android:hint="@string/ITERATION_LIMIT_TEXT"/>
         </android.support.design.widget.TextInputLayout>
@@ -102,6 +94,7 @@
         <!-- 3th row -->
 
         <Button
+            android:visibility="invisible"
             android:id="@+id/forwardButton"
             android:text="@string/FORWARD_BUTTON_TEXT"
             android:onClick="forwardButtonClick"
@@ -109,6 +102,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
+            android:visibility="invisible"
             android:id="@+id/backButton"
             android:text="@string/BACK_BUTTON_TEXT"
             android:onClick="backButtonClick"
@@ -116,6 +110,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
+            android:visibility="invisible"
             android:id="@+id/deleteButton"
             android:text="@string/DELETE_BUTTON_TEXT"
             android:onClick="deleteButtonClick"
@@ -126,6 +121,7 @@
         <!-- 4th row -->
 
         <Button
+            android:visibility="invisible"
             android:id="@+id/homeButton"
             android:text="@string/HOME_BUTTON_TEXT"
             android:onClick="homeButtonClick"
@@ -133,6 +129,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
+            android:visibility="invisible"
             android:id="@+id/saveButton"
             android:text="@string/SAVE_BUTTON_TEXT"
             android:onClick="saveButtonClick"
@@ -140,6 +137,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
+            android:visibility="invisible"
             android:id="@+id/recordButton"
             android:enabled="false"
             android:text="@string/RECORD_BUTTON_TEXT"
@@ -155,6 +153,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
+            android:visibility="invisible"
             android:id="@+id/playButton"
             android:enabled="false"
             android:text="@string/PLAY_BUTTON_TEXT"
@@ -163,6 +162,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
+            android:visibility="invisible"
             android:id="@+id/stopButton"
             android:enabled="false"
             android:text="@string/STOP_BUTTON_TEXT"
@@ -173,7 +173,6 @@
 
         <!-- 6th row -->
         <android.support.design.widget.TextInputLayout
-
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             grid:layout_columnWeight="1">
@@ -183,23 +182,20 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="number"
-                android:onClick="updateFrameFields"
                 android:text="@string/DEFAULT_FPS"
                 android:hint="@string/FRAME_RATE_TEXT"/>
         </android.support.design.widget.TextInputLayout>
 
         <android.support.design.widget.TextInputLayout
-            android:layout_width="100dp"
-            android:layout_height="wrap_content"
-            grid:layout_columnWeight="1">
-
+            android:layout_width = "100dp"
+            android:layout_height = "wrap_content"
+            grid:layout_columnWeight = "1">
             <EditText
                 android:id="@+id/recordTimeTextField"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="number"
-                android:onClick="updateFrameFields"
                 android:text="@string/DEFAULT_RECORD_TIME"
                 android:hint="@string/RECORD_TIME_TEXT"/>
         </android.support.design.widget.TextInputLayout>
@@ -208,28 +204,18 @@
             android:layout_width="100dp"
             android:layout_height="wrap_content"
             grid:layout_columnWeight="1">
-
             <EditText
                 android:id="@+id/numFramesTextField"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:inputType="number"
-
                 android:enabled="false"
                 android:text="@string/DEFAULT_NUM_FRAMES"
                 android:hint="@string/NUM_FRAMES_TEXT"/>
         </android.support.design.widget.TextInputLayout>
 
-
-
     </android.support.v7.widget.GridLayout>
-
-
-
-
-
-
 
 </RelativeLayout>
 

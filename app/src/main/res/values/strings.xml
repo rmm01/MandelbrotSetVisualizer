@@ -4,9 +4,9 @@
     <string name="CENTER_IMAG_TEXT">Imaginary coordinate</string>
     <string name="EDGE_LENGTH_TEXT">Edge Length</string>
     <string name="ITERATION_LIMIT_TEXT">Iteration limit</string>
-    <string name="FRAME_RATE_TEXT">FPS</string>
-    <string name="RECORD_TIME_TEXT">X Seconds</string>
-    <string name="NUM_FRAMES_TEXT">= Frames</string>
+    <string name="FRAME_RATE_TEXT">Frames Per Second</string>
+    <string name="RECORD_TIME_TEXT">Duration</string>
+    <string name="NUM_FRAMES_TEXT">Total Frames</string>
     <string name="FORWARD_BUTTON_TEXT">Forward</string>
     <string name="BACK_BUTTON_TEXT">Back</string>
     <string name="DELETE_BUTTON_TEXT">Delete</string>
@@ -16,9 +16,9 @@
     <string name="PLAY_BUTTON_TEXT">Play</string>
     <string name="STOP_BUTTON_TEXT">Stop</string>
     <string name="DEFAULT_CENTER_REAL">0.0</string>
-    <string name="DEFAULT_CENTER_IMAG">0.0</string>
+    <string name="DEFAULT_CENTER_IMAGINARY">0.0</string>
     <string name="DEFAULT_EDGE_LENGTH">4.0</string>
-    <string name="DEFAULT_ITERATION_LIMIT">8</string>
+    <string name="DEFAULT_ITERATION_LIMIT">16</string>
     <string name="DEFAULT_FPS">20</string>
     <string name="DEFAULT_RECORD_TIME">1</string>
     <string name="DEFAULT_NUM_FRAMES">20</string>
