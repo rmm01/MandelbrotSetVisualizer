@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -16,7 +17,6 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
     public static String TAG = "MANDELBROT_ACTIVITY";
 
-    private Model model;
     private MandelbrotView mMandelbrotView;
     private MaterialProgressBar mProgressBar;
 
@@ -28,10 +28,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     private EditText recordTimeTextField;
     private EditText numFramesTextField;
 
-    //private Button forwardButton;
-    //private Button backButton;
+    private Button forwardButton;
+    private Button backButton;
     //private Button deleteButton;
-    //private Button homeButton;
+    private Button homeButton;
     //private Button saveButton;
     //private Button recordButton;
     //private Button playButton;
@@ -54,10 +54,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         recordTimeTextField = (EditText) findViewById(R.id.recordTimeTextField);
         numFramesTextField = (EditText) findViewById(R.id.numFramesTextField);
 
-        //forwardButton = (Button) findViewById(R.id.forwardButton);
-        //backButton = (Button) findViewById(R.id.backButton);
+        forwardButton = (Button) findViewById(R.id.forwardButton);
+        backButton = (Button) findViewById(R.id.backButton);
         //deleteButton = (Button) findViewById(R.id.deleteButton);
-        //homeButton = (Button) findViewById(R.id.homeButton);
+        homeButton = (Button) findViewById(R.id.homeButton);
         //saveButton = (Button) findViewById(R.id.saveButton);
         //recordButton = (Button) findViewById(R.id.recordButton);
         //playButton = (Button) findViewById(R.id.playButton);
@@ -73,19 +73,26 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.setOnTouchListener(this);
         mMandelbrotView.setProgressListener(this,5);
 
-        model = new Model(this);
-        model.setNumPixels(300);
-        mMandelbrotView.setModel(model);
     }
 
 
     public void forwardButtonClick(View view) {
         Log.v(TAG, "forwardButtonClick");
+        mMandelbrotView.forward();
+        backButton.setEnabled(true);
+        forwardButton.setEnabled(mMandelbrotView.canForward());
+        mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
+                edgeLengthTextField, iterationLimitTextField);
     }
 
 
     public void backButtonClick(View view) {
         Log.v(TAG, "backButtonClick");
+        mMandelbrotView.backward();
+        forwardButton.setEnabled(true);
+        backButton.setEnabled(mMandelbrotView.canBackward());
+        mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
+                edgeLengthTextField, iterationLimitTextField);
     }
 
 
@@ -96,6 +103,11 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
     public void homeButtonClick(View view) {
         Log.v(TAG, "homeButtonClick");
+        mMandelbrotView.reset();
+        backButton.setEnabled(false);
+        forwardButton.setEnabled(false);
+        mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
+                edgeLengthTextField, iterationLimitTextField);
     }
 
 
@@ -130,20 +142,18 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
     public void updateDrawingFields(){
 
-        int value = Integer.parseInt(iterationLimitTextField.getText().toString());
-        model.setIterationLimit(value);
-
+        int iteration = Integer.parseInt(iterationLimitTextField.getText().toString());
         double coordinateR = Double.parseDouble( centerRealTextField.getText().toString() );
-        model.setCenterReal(coordinateR);
-
         double coordinateI = Double.parseDouble(centerImaginaryTextField.getText().toString());
-        model.setCenterImag(coordinateI);
-
         double edge = Double.parseDouble(edgeLengthTextField.getText().toString());
-        model.setEdgeLength(edge);
-        mMandelbrotView.redraw();
+
+        mMandelbrotView.setModelValues(coordinateR, coordinateI, edge, iteration);
     }
 
+    //Todo: put toast strings into strings.xml
+    //Todo: make all fields be validated when any text field hits enter
+    //Todo: fix bug where view doesn't always scroll up when keyboard is made visible
+    //TODO: implement toString for classes
 
     public boolean validateFrameFields(){
         String toastMessage = "";
@@ -209,13 +219,20 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     }
 
 
-    public void zoom(double x, double y){
-        model.recenterZoom((int) x, (int) y);
-        centerRealTextField.setText(Double.toString(model.getCenterReal()));
-        centerImaginaryTextField.setText(Double.toString(model.getCenterImaginary()));
-        edgeLengthTextField.setText(Double.toString(model.getEdgeLength()));
-        iterationLimitTextField.setText(Integer.toString(model.getIterationLimit()));
-        mMandelbrotView.redraw();
+    /**
+     * Zooms onto a pixel locaton. Fails if pixel is not on the mandelbrot image.
+     *
+     * @param x x pixel coordinate
+     * @param y y pixel coordinate
+     */
+    public void zoom(int x, int y){
+        if(!mMandelbrotView.zoom(x, y))
+            return;
+
+        mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
+                edgeLengthTextField, iterationLimitTextField);
+        backButton.setEnabled(true);
+        forwardButton.setEnabled(mMandelbrotView.canForward());
     }
 
 
@@ -227,7 +244,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         double y = e.getY();
 
         Log.v( TAG,"X = " + x + ", Y = " + y );
-        zoom(x, y);
+        zoom((int)x, (int)y);
         return true;
     }
 
@@ -261,6 +278,15 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         frameRateTextField.setEnabled(false);
         recordTimeTextField.setEnabled(false);
 
+        forwardButton.setVisibility(View.INVISIBLE);
+        backButton.setVisibility(View.INVISIBLE);
+        //deleteButton.setVisibility(View.INVISIBLE);
+        homeButton.setVisibility(View.INVISIBLE);
+        //saveButton.setVisibility(View.INVISIBLE);
+        //recordButton.setVisibility(View.INVISIBLE);
+        //playButton.setVisibility(View.INVISIBLE);
+        //stopButton.setVisibility(View.INVISIBLE);
+
     }
 
 
@@ -281,5 +307,14 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         frameRateTextField.setEnabled(true);
         recordTimeTextField.setEnabled(true);
 
+
+        forwardButton.setVisibility(View.VISIBLE);
+        backButton.setVisibility(View.VISIBLE);
+        //deleteButton.setVisibility(View.VISIBLE);
+        homeButton.setVisibility(View.VISIBLE);
+        //saveButton.setVisibility(View.VISIBLE);
+        //recordButton.setVisibility(View.VISIBLE);
+        //playButton.setVisibility(View.VISIBLE);
+        //stopButton.setVisibility(View.VISIBLE);
     }
 }

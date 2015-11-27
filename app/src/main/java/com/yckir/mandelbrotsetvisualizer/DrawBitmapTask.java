@@ -1,13 +1,14 @@
 package com.yckir.mandelbrotsetvisualizer;
 
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
-public class DrawingAsyncTask extends AsyncTask<SurfaceHolder, Integer, Void> {
+public class DrawBitmapTask extends AsyncTask<Bitmap, Integer, Bitmap> {
 
     public static String TAG = "DRAWING_ASYNC_TASK";
     private Model mModel;
@@ -21,7 +22,7 @@ public class DrawingAsyncTask extends AsyncTask<SurfaceHolder, Integer, Void> {
      * @param progressPercent the listener should be when a multiple of this progress value is made.
      *                        must be between > 0 and <=100
      */
-    public DrawingAsyncTask(Model model, MandelbrotView.ProgressListener listener, int progressPercent){
+    public DrawBitmapTask(Model model, MandelbrotView.ProgressListener listener, int progressPercent){
         mModel = model;
         mListener=listener;
         mProgressPercent = progressPercent;
@@ -37,14 +38,14 @@ public class DrawingAsyncTask extends AsyncTask<SurfaceHolder, Integer, Void> {
 
 
     @Override
-    protected Void doInBackground(SurfaceHolder... params) {
+    protected Bitmap doInBackground(Bitmap... params) {
         if(params.length==0){
-            Log.e(TAG,"error, holder passed to DrawingAsyncTask.execute is null");
+            Log.e(TAG, "error, canvas passed to DrawingAsyncTask.execute is null");
             return null;
         }
 
-        SurfaceHolder holder = params[0];
-        Canvas canvas = holder.lockCanvas();
+        Bitmap bitmap = params[0];
+        Canvas canvas = new Canvas(bitmap);
         canvas.drawColor(Color.WHITE);
 
         long startTime = System.currentTimeMillis();
@@ -63,9 +64,8 @@ public class DrawingAsyncTask extends AsyncTask<SurfaceHolder, Integer, Void> {
             publishProgress( currentProgress );
         }
 
-        holder.unlockCanvasAndPost(canvas);
         Log.v(TAG, "total task time =: " + ( System.currentTimeMillis() - startTime ) + " ms");
-        return null;
+        return bitmap;
     }
 
 
@@ -78,8 +78,8 @@ public class DrawingAsyncTask extends AsyncTask<SurfaceHolder, Integer, Void> {
 
 
     @Override
-    protected void onPostExecute(Void aVoid) {
-        super.onPostExecute(aVoid);
+    protected void onPostExecute(Bitmap bitmap) {
+        super.onPostExecute(bitmap);
         if( mListener != null )
             mListener.onProgressFinished();
     }

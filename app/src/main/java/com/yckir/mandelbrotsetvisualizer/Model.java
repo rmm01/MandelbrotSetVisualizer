@@ -9,45 +9,52 @@ import android.graphics.Paint;
 import android.util.Log;
 
 public class Model{
-    public static String TAG = "MODEL";
-    private final double DEFAULT_CENTER_REAL;
-    private final double DEFAULT_CENTER_IMAGINARY;
-    private final double DEFAULT_EDGE_LENGTH;
-    private final int    DEFAULT_ITERATION_LIMIT;
+    public  static String TAG                       =   "MODEL";
+    private static double DEFAULT_CENTER_REAL       =   0;
+    private static double DEFAULT_CENTER_IMAGINARY  =   0;
+    private static double DEFAULT_EDGE_LENGTH       =   4;
+    private static int    DEFAULT_ITERATION_LIMIT   =   16;
+    private static int    mNumPixels                =   100;
 
+    private String mFileName;
     private double mCenterReal;
     private double mCenterImaginary;
     private double mEdgeLength;
     private int    mIterationLimit;
-    private int    mNumPixels;
 
 
-    Model(Context context) {
+    Model(int numPixels) {
+        mCenterReal         = DEFAULT_CENTER_REAL;
+        mCenterImaginary    = DEFAULT_CENTER_IMAGINARY;
+        mEdgeLength         = DEFAULT_EDGE_LENGTH;
+        mIterationLimit     = DEFAULT_ITERATION_LIMIT;
+        mNumPixels          = numPixels;
 
-        Resources resources = context.getResources();
-        DEFAULT_CENTER_REAL = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
-        DEFAULT_CENTER_IMAGINARY = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
-        DEFAULT_EDGE_LENGTH = Double.parseDouble( resources.getString( R.string.DEFAULT_EDGE_LENGTH ) );
-        DEFAULT_ITERATION_LIMIT = Integer.parseInt(resources.getString(R.string.DEFAULT_ITERATION_LIMIT));
-        mCenterReal = DEFAULT_CENTER_REAL;
-        mCenterImaginary = DEFAULT_CENTER_IMAGINARY;
-        mEdgeLength = DEFAULT_EDGE_LENGTH;
-        mIterationLimit = DEFAULT_ITERATION_LIMIT;
-        mNumPixels=100;
+        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + ".png" ;
     }
 
 
-    Model( double centerReal, double centerImaginary, double edgeLength, int iterationLimit , Context context) {
-        Resources resources = context.getResources();
-        DEFAULT_CENTER_REAL = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
-        DEFAULT_CENTER_IMAGINARY = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
-        DEFAULT_EDGE_LENGTH = Double.parseDouble(resources.getString(R.string.DEFAULT_EDGE_LENGTH));
-        DEFAULT_ITERATION_LIMIT = Integer.parseInt(resources.getString(R.string.DEFAULT_ITERATION_LIMIT));
-        mCenterReal = centerReal;
-        mCenterImaginary = centerImaginary;
-        mEdgeLength = edgeLength;
-        mIterationLimit = iterationLimit;
-        mNumPixels=100;
+    Model( double centerReal, double centerImaginary, double edgeLength, int iterationLimit, int numPixels) {
+        mCenterReal         = centerReal;
+        mCenterImaginary    = centerImaginary;
+        mEdgeLength         = edgeLength;
+        mIterationLimit     = iterationLimit;
+        mNumPixels          = numPixels;
+
+        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + ".png" ;
+    }
+
+    /**
+     * Set the default values.
+     *
+     * @param context the context that has string resource values
+     */
+    public static void setDefaultValues(Context context){
+        Resources resources         = context.getResources();
+        DEFAULT_CENTER_REAL         = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
+        DEFAULT_CENTER_IMAGINARY    = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
+        DEFAULT_EDGE_LENGTH         = Double.parseDouble( resources.getString( R.string.DEFAULT_EDGE_LENGTH ) );
+        DEFAULT_ITERATION_LIMIT     = Integer.parseInt(resources.getString(R.string.DEFAULT_ITERATION_LIMIT));
     }
 
 
@@ -62,9 +69,10 @@ public class Model{
         if(iterationCount==mIterationLimit)
             return Color.BLACK;
 
-        float fraction = ( float )iterationCount / ( float )mIterationLimit;
-        int r = ( int )( fraction * 255 );
-        int b = ( int )( ( 1-fraction ) * 255 );
+        float fraction  = ( float )iterationCount / ( float )mIterationLimit;
+        int r           = ( int )( fraction * 255 );
+        int b           = ( int )( ( 1-fraction ) * 255 );
+
         return Color.argb(255, r, 0, b);
     }
 
@@ -122,7 +130,7 @@ public class Model{
     /**
      * Reset the object to its default values, excluding the image size.
      */
-    void reset() {
+    public void reset() {
         mCenterReal = DEFAULT_CENTER_REAL;
         mCenterImaginary = DEFAULT_CENTER_IMAGINARY;
         mEdgeLength = DEFAULT_EDGE_LENGTH;
@@ -137,7 +145,7 @@ public class Model{
      * @param x the pixel in x direction that was selected
      * @param y the pixel in y direction that was selected
      */
-    void recenterZoom(int x, int y) {
+    public void recenterZoom(int x, int y) {
         //Log.v(TAG, "recenterZoom with x = " + x + ", y = " + y);
         //Log.v(TAG,this.toString());
         y = mNumPixels - y;
@@ -156,7 +164,7 @@ public class Model{
      *
      * @param canvas the canvas that will be drawn onto
      */
-    void drawCanvas(Canvas canvas) {
+    public void drawCanvas(Canvas canvas) {
         canvas.drawColor(Color.WHITE);
 
         long startTime = System.currentTimeMillis();
@@ -187,7 +195,7 @@ public class Model{
      * @param endPercent the portion of the image where the drawing will end.
      * @param canvas the canvas to be drawn on.
      */
-    void partialDrawCanvas(int startPercent, int endPercent, Canvas canvas){
+    public void partialDrawCanvas(int startPercent, int endPercent, Canvas canvas){
         //long startTime = System.currentTimeMillis();
 
         if(startPercent < 0 || startPercent > 100){
@@ -226,7 +234,7 @@ public class Model{
     /**
      * @param newCenterReal the x coordinate on the real axis
      */
-    void setCenterReal(double newCenterReal) {
+    public void setCenterReal(double newCenterReal) {
         mCenterReal = newCenterReal;
     }
 
@@ -234,7 +242,7 @@ public class Model{
     /**
      * @param newCenterImag the y coordinate on the imaginary axis
      */
-    void setCenterImag(double newCenterImag) {
+    public void setCenterImaginary(double newCenterImag) {
         mCenterImaginary = newCenterImag;
     }
 
@@ -252,7 +260,7 @@ public class Model{
      * @param newIterationLimit how many checks will be performed to determin if a point is on the
      *                          mandelbrot set.
      */
-    void setIterationLimit(int newIterationLimit) {
+    public void setIterationLimit(int newIterationLimit) {
         mIterationLimit = newIterationLimit;
     }
 
@@ -260,41 +268,67 @@ public class Model{
     /**
      * @param numPixels the number of pixels in the image.
      */
-    void setNumPixels(int numPixels){
+    public void setNumPixels(int numPixels){
         mNumPixels = numPixels;
+        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() );
     }
+
+
+    /**
+     * change the file name. this value will be appened fo the front of "_numPixels.png"
+     * @param fileName the new name of the file
+     */
+    public void changeFileName(String fileName){mFileName = fileName + "_" + mNumPixels + ".png";}
 
 
     /**
      * @return the x coordinate on the real axis
      */
-    double getCenterReal(){ return mCenterReal; }
+    public double getCenterReal(){ return mCenterReal; }
 
 
     /**
      * @return the y coordinate on the imaginary axis
      */
-    double getCenterImaginary(){	return mCenterImaginary; }
+    public double getCenterImaginary(){	return mCenterImaginary; }
 
 
     /**
      * @return the length of a pixel on the mandelbrot image. This value can be thought
      *                      of as zoom, a small value results in zooming towards the image.
      */
-    double getEdgeLength(){ return mEdgeLength; }
+    public double getEdgeLength(){ return mEdgeLength; }
 
 
     /**
      * @return how many checks will be performed to determin if a point is on the
      *                          mandelbrot set.
      */
-    int getIterationLimit(){ return mIterationLimit; }
+    public int getIterationLimit(){ return mIterationLimit; }
+
+
+    /**
+     * @return get the filename for this instance of the Model. format is "Mandel_numPixels_creationTime"
+     */
+    public String getFileName(){return mFileName;}
 
 
     /**
      * @return the number of pixels in the image.
      */
-    int getNumPixels(){ return mNumPixels; }
+    public int getNumPixels(){ return mNumPixels; }
+
+
+    /**
+     * makes a copy of the current model. It will have a different file name.
+     *
+     * @return copy of the current model.
+     */
+    public Model makeCopy(){
+        Model copy = new Model(mCenterReal,mCenterImaginary,mEdgeLength,mIterationLimit,mNumPixels);
+        copy.setNumPixels(mNumPixels);
+        return copy;
+    }
 
 
     @Override

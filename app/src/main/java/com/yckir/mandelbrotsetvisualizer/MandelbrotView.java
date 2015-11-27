@@ -2,105 +2,335 @@ package com.yckir.mandelbrotsetvisualizer;
 
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.os.Handler;
-import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.EditText;
 
-import java.lang.ref.WeakReference;
+import java.io.File;
+import java.util.LinkedList;
 
 public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callback{
 
-    public static final String TAG = "MANDELBROT_VIEW";
-    private static final int DEFAULT_PROGRESS_PERCENT = 100;
-    private Model mModel;
-    private SurfaceHolder mHolder;
-    private ProgressListener mListener;
-    private MyHandler mMyHandler;
+    public  static final String     TAG                         =   "MANDELBROT_VIEW";
+    private static final String     FIRST_MANDELBROT_FILE_NAME  =   "DefaultMandelbrot.png" ;
+    private static final int        DEFAULT_PROGRESS_PERCENT    =    100;
 
-    private int mProgressPercent;
-    private int mWidth;
-    private int mHeight;
-    private int mImageLength;
+    private Model               mCurrentModel;
+    private LinkedList<Model>   mModelHistory;
+    private SurfaceHolder       mHolder;
+    private ProgressListener    mProgressListener;
 
+    private int     mNumModels;
+    private int     mCurrentModelIndex;
+    private int     mProgressPercent;
+    private int     mWidth;
+    private int     mHeight;
+    private int     mImageLength;
+    private int     mPaddingX;
 
     public MandelbrotView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        mModel = null;
-        mListener = null;
-        mMyHandler = new MyHandler(this);
+        mHeight = getHeight( );
+        mWidth  = getWidth();
+        mPaddingX = 0;
+        mImageLength = Math.min(mWidth, mHeight);
+        Log.v( TAG, "constructor w = " + mWidth + ", h = " + mHeight );
 
-        mHeight=getHeight();
-        mWidth=getWidth();
-        mImageLength=Math.min(mWidth, mHeight);
+        resetModelList( );
+
+        mHolder = getHolder( );
+        mHolder.addCallback( this );
+
         mProgressPercent = DEFAULT_PROGRESS_PERCENT;
+        mProgressListener = new ProgressListener( ) {
+            @Override
+            public void onProgressStart() {
 
-        mHolder = getHolder();
-        mHolder.addCallback(this);
+            }
+
+            @Override
+            public void onProgressUpdate(int progress) {
+
+            }
+
+            @Override
+            public void onProgressFinished() {
+
+            }
+        };
     }
 
 
+    /**
+     * Adds a model to the next position in list.
+     *
+     * @param model the model that will be saved
+     */
+    private void addModelToList(Model model){
+        mCurrentModelIndex++;
+        mNumModels=mCurrentModelIndex+1;
+        mModelHistory.add(mCurrentModelIndex, model);
+        mCurrentModel=model;
+    }
+
+
+    /**
+     * resets the model list and recreates the default first entry.
+     */
+    private void resetModelList(){
+        Model.setDefaultValues(getContext());
+        mNumModels=1;
+        mCurrentModelIndex=0;
+        mModelHistory = new LinkedList<>();
+        mCurrentModel = new Model(mImageLength);
+        mCurrentModel.changeFileName(FIRST_MANDELBROT_FILE_NAME);
+        mModelHistory.addFirst(mCurrentModel);
+    }
+
+
+    /**
+     * Update the canvas of the surface view using the currently selected model.
+     */
+    private void drawView(){
+        Log.v(TAG, "searching for file " + mCurrentModel.getFileName());
+        File file = new File( getContext().getFilesDir(), mCurrentModel.getFileName());
+        if(!file.exists()) {
+            writeAndDisplayMandelbrotImage(file, mImageLength);
+            return;
+        }
+
+        displayMandelbrotImage(file);
+        Utility.logFileDetails(file);
+
+        //DrawingAsyncTask task = new DrawingAsyncTask(mCurrentModel, mProgressListener,mProgressPercent);
+        //task.execute(mHolder);
+    }
+
+
+    /**
+     * Displays on the surface view the image at the given file location. Nothing happens if the
+     * file could not be read.
+     *
+     * @param file the file location.
+     */
+    private void displayMandelbrotImage(File file){
+        Bitmap myBitmap = Utility.getFileBitmap(file);
+        if(myBitmap == null) {
+            Log.e("FILE", "could not read " + file.getName());
+            return;
+        }
+
+        Canvas canvas = mHolder.lockCanvas();
+        canvas.drawColor(Color.WHITE);
+        canvas.drawBitmap(myBitmap, mPaddingX, 0, null);
+        mHolder.unlockCanvasAndPost(canvas);
+    }
+
+
+    /**
+     * Draws the image on a separate thread, writes the image, and displays it on surfaceView.
+     * This method returning does not indicate that all these steps have completed.
+     *
+     * @param file the file to write to
+     * @param imageSize the image size
+     */
+    private void writeAndDisplayMandelbrotImage(final File file, int imageSize){
+        Log.v(TAG, "writeAndDisplayMandelbrotImage");
+        final Bitmap bitmap = Bitmap.createBitmap(imageSize, imageSize, Bitmap.Config.ARGB_8888);
+        ProgressListener listener = new ProgressListener() {
+            @Override
+            public void onProgressStart() {mProgressListener.onProgressStart();}
+
+            @Override
+            public void onProgressUpdate(int progress) {mProgressListener.onProgressUpdate(progress);}
+
+            @Override
+            public void onProgressFinished() {
+                Utility.writeBitmapToPNG(bitmap, file);
+                displayMandelbrotImage(file);
+                Utility.logFileDetails(file);
+                mProgressListener.onProgressFinished();
+            }
+        };
+        DrawBitmapTask task = new DrawBitmapTask(mCurrentModel,listener,mProgressPercent);
+        task.execute(bitmap);
+    }
+
+
+    /**
+     * Move backwards in the mandelbrot image list and redraws the view.
+     */
+    public void backward(){
+        if( mCurrentModelIndex == 0 ){
+            Log.e(TAG, "cannot go backward");
+            return;
+        }
+        mCurrentModelIndex--;
+        mCurrentModel=mModelHistory.get(mCurrentModelIndex);
+        drawView();
+    }
+
+
+    /**
+     * Move forward in the mandelbrot image list and redraws the view.
+     */
+    public void forward(){
+        if( mCurrentModelIndex == mNumModels - 1 ){
+            Log.e(TAG, "cannot go forward");
+            return;
+        }
+        mCurrentModelIndex++;
+        mCurrentModel=mModelHistory.get(mCurrentModelIndex);
+        drawView();
+    }
+
+
+    /**
+     * create a new list with the default image and redraws the view.
+     */
+    public void reset(){
+        resetModelList();
+        drawView();
+    }
+
+
+    /**
+     * Zoom into the selected pixel and redraws the view.
+     *
+     * @param xPixel x coordinate
+     * @param yPixel y coordinate
+     * @return true if the pixel was valid
+     */
+    public boolean zoom(int xPixel, int yPixel){
+        xPixel=xPixel-mPaddingX;
+        if( xPixel<0 || xPixel > mImageLength )
+            return false;
+
+        Model copyModel = mCurrentModel.makeCopy();
+        copyModel.recenterZoom(xPixel, yPixel);
+        addModelToList(copyModel);
+        drawView();
+        return true;
+    }
+
+
+    /**
+     * @return true if not currently viewing first image in list.
+     */
+    public boolean canBackward() {
+        Log.v(TAG, "can backwards current index is " + mCurrentModelIndex);
+        return mCurrentModelIndex != 0;
+    }
+
+
+    /**
+     * @return true if not currently viewing last image in list.
+     */
+    public boolean canForward() {
+        Log.v(TAG, "can forward current index is " + mCurrentModelIndex + "numModels = " + mNumModels);
+        return mCurrentModelIndex != mNumModels-1;
+    }
+
+
+    /**
+     * Updates the editText mandelbrot values from the views mandelbrot values.
+     *
+     * @param centerRealField editText for center real coordinate
+     * @param centerImaginaryField editText for center imaginary coordinate
+     * @param edgeLengthField editText for center edgeLength
+     * @param iterationLimitField editText for iteration limit field
+     */
+    public void getModelValues(EditText centerRealField, EditText centerImaginaryField,
+                               EditText edgeLengthField, EditText iterationLimitField){
+
+        centerRealField.setText(Double.toString(mCurrentModel.getCenterReal()));
+        centerImaginaryField.setText(Double.toString(mCurrentModel.getCenterImaginary()));
+        edgeLengthField.setText(Double.toString(mCurrentModel.getEdgeLength()));
+        iterationLimitField.setText(Integer.toString(mCurrentModel.getIterationLimit()));
+    }
+
+
+    /**
+     * Updates the views mandelbrot values from the editText mandelbrot values. The
+     * list does not grow in size.
+     *
+     * @param centerReal value of center real editText field
+     * @param centerImaginary value of center Imaginary editText field
+     * @param edgeLength value of edge length editText field
+     * @param iterationLimit value of iteration limit editText field
+     */
+    public void setModelValues(double centerReal, double centerImaginary, double edgeLength,
+                               int iterationLimit){
+
+        mCurrentModel = new Model(centerReal,centerImaginary,edgeLength,iterationLimit, mCurrentModel.getNumPixels());
+        mModelHistory.add(mCurrentModelIndex, mCurrentModel);
+        mModelHistory.remove(mCurrentModelIndex + 1);
+        drawView();
+    }
+
+
+    /**
+     * Set a listener that will be notified about progress events.
+     *
+     * @param listener the listener that will have its methods called during progress events
+     * @param progressPercent the listener will be notified when a multiple of this value is the
+     *                        current progress. if the value is 5, then the listener will be
+     *                        notified 20 times, at 5,10,..95,100.
+     */
     public void setProgressListener(ProgressListener listener, int progressPercent){
-        mListener = listener;
+        //TODO: set progress listener to work in increments instead of percent
+        mProgressListener = listener;
         mProgressPercent = progressPercent;
-    }
-
-
-    /**
-     * set the model that holds drawing details
-     * @param model the model that holds drawing details
-     */
-    public void setModel(Model model) {
-        mModel = model;
-    }
-
-
-    /**
-     * Update the view using the current Model to draw on.
-     */
-    public void redraw(){
-        DrawingAsyncTask task = new DrawingAsyncTask(mModel,mListener,mProgressPercent);
-        task.execute(mHolder);
     }
 
 
     @Override
     protected void onDraw(Canvas canvas) {
         mImageLength=Math.min(getWidth(),getHeight());
-        mModel.setNumPixels(mImageLength);
-        mModel.drawCanvas(canvas);
+        mCurrentModel.setNumPixels(mImageLength);
+        mCurrentModel.drawCanvas(canvas);
     }
 
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        Log.v(TAG,"SurfaceCreated");
-        Canvas canvas = holder.lockCanvas();
-        canvas.drawColor(Color.CYAN);
-        holder.unlockCanvasAndPost(canvas);
+        Log.v(TAG, "SurfaceCreated");
     }
 
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        Log.v(TAG,"SurfaceChanged");
+        //Todo: make it so that changing teh fields on the default image does not override the default image
+        //Todo: make is sot that the surface changes dosnt reset the list
+        if( mWidth == width && mHeight == height ) {
+            Log.v(TAG, "surface unchanged w = " +mWidth + ", h = " +mHeight );
+            return;
+        }
         mHeight=height;
         mWidth=width;
         mImageLength=Math.min(mWidth,mHeight);
-        mModel.setNumPixels(mImageLength);
+        mPaddingX=(mWidth-mImageLength)/2;
 
-        mMyHandler.sendEmptyMessageDelayed(0,300);
+        Log.v(TAG, "Surface Changed w = " + mWidth + ", h = " + mHeight);
+
+        //resetModelList();
+
+        mCurrentModel.setNumPixels(mImageLength);
+        mCurrentModel.changeFileName(FIRST_MANDELBROT_FILE_NAME);
+        //createDefaultImage();
+        drawView();
     }
 
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.v(TAG,"SurfaceDestroyed");
+        Log.v(TAG, "SurfaceDestroyed");
     }
 
 
@@ -137,29 +367,5 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
          * Called when the Image has finished drawing.
          */
         void onProgressFinished();
-    }
-
-
-    /**
-     * Handler that is used to make a delayed call to MandelbrotView.redraw().
-     * This is used to construct the first mandelbrot image when teh activity is started.
-     * The call to redraw must be delayed because otherwise, the AsyncTask requests the canvas
-     * before the surfaceView has finished initializing, causing the main thread to wait.
-     */
-    private static class MyHandler extends Handler{
-
-        private final WeakReference<MandelbrotView> mWeakMandelReference;
-
-        public MyHandler(MandelbrotView view){
-            mWeakMandelReference = new WeakReference<>(view);
-        }
-
-
-        @Override
-        public void handleMessage(Message msg) {
-            MandelbrotView mandelbrotView = mWeakMandelReference.get();
-            if(mandelbrotView != null)
-                mandelbrotView.redraw();
-        }
     }
 }

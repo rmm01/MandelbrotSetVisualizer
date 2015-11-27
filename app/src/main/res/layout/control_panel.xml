@@ -94,7 +94,7 @@
         <!-- 3th row -->
 
         <Button
-            android:visibility="invisible"
+            android:enabled="false"
             android:id="@+id/forwardButton"
             android:text="@string/FORWARD_BUTTON_TEXT"
             android:onClick="forwardButtonClick"
@@ -102,7 +102,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
-            android:visibility="invisible"
+            android:enabled="false"
             android:id="@+id/backButton"
             android:text="@string/BACK_BUTTON_TEXT"
             android:onClick="backButtonClick"
@@ -121,7 +121,6 @@
         <!-- 4th row -->
 
         <Button
-            android:visibility="invisible"
             android:id="@+id/homeButton"
             android:text="@string/HOME_BUTTON_TEXT"
             android:onClick="homeButtonClick"
