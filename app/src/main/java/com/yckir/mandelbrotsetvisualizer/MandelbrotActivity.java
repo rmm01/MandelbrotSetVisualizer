@@ -30,7 +30,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
     private Button forwardButton;
     private Button backButton;
-    //private Button deleteButton;
+    private Button deleteButton;
     private Button homeButton;
     //private Button saveButton;
     //private Button recordButton;
@@ -56,7 +56,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
         forwardButton = (Button) findViewById(R.id.forwardButton);
         backButton = (Button) findViewById(R.id.backButton);
-        //deleteButton = (Button) findViewById(R.id.deleteButton);
+        deleteButton = (Button) findViewById(R.id.deleteButton);
         homeButton = (Button) findViewById(R.id.homeButton);
         //saveButton = (Button) findViewById(R.id.saveButton);
         //recordButton = (Button) findViewById(R.id.recordButton);
@@ -80,6 +80,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         Log.v(TAG, "forwardButtonClick");
         mMandelbrotView.forward();
         backButton.setEnabled(true);
+        deleteButton.setEnabled(true);
         forwardButton.setEnabled(mMandelbrotView.canForward());
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
@@ -91,6 +92,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.backward();
         forwardButton.setEnabled(true);
         backButton.setEnabled(mMandelbrotView.canBackward());
+        deleteButton.setEnabled(mMandelbrotView.canDelete());
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
     }
@@ -98,6 +100,14 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
     public void deleteButtonClick(View view) {
         Log.v(TAG, "deleteButtonClick");
+        mMandelbrotView.delete();
+
+        deleteButton.setEnabled(mMandelbrotView.canDelete());
+        backButton.setEnabled(mMandelbrotView.canBackward());
+        forwardButton.setEnabled(mMandelbrotView.canForward());
+        mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
+                edgeLengthTextField, iterationLimitTextField);
+
     }
 
 
@@ -106,6 +116,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.reset();
         backButton.setEnabled(false);
         forwardButton.setEnabled(false);
+        deleteButton.setEnabled(false);
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
     }
@@ -231,6 +242,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
+        deleteButton.setEnabled(true);
         backButton.setEnabled(true);
         forwardButton.setEnabled(mMandelbrotView.canForward());
     }
@@ -280,7 +292,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
         forwardButton.setVisibility(View.INVISIBLE);
         backButton.setVisibility(View.INVISIBLE);
-        //deleteButton.setVisibility(View.INVISIBLE);
+        deleteButton.setVisibility(View.INVISIBLE);
         homeButton.setVisibility(View.INVISIBLE);
         //saveButton.setVisibility(View.INVISIBLE);
         //recordButton.setVisibility(View.INVISIBLE);
@@ -310,7 +322,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
         forwardButton.setVisibility(View.VISIBLE);
         backButton.setVisibility(View.VISIBLE);
-        //deleteButton.setVisibility(View.VISIBLE);
+        deleteButton.setVisibility(View.VISIBLE);
         homeButton.setVisibility(View.VISIBLE);
         //saveButton.setVisibility(View.VISIBLE);
         //recordButton.setVisibility(View.VISIBLE);

@@ -201,6 +201,22 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
 
 
     /**
+     * Delete the currently displayed Mandelbrot image.
+     */
+    public void delete(){
+        if(!canDelete()){
+            Log.e(TAG, "cannot delete last element");
+            return;
+        }
+        mModelHistory.remove(mCurrentModelIndex);
+        mNumModels--;
+        mCurrentModelIndex--;
+        mCurrentModel=mModelHistory.get(mCurrentModelIndex);
+        drawView();
+    }
+
+
+    /**
      * Zoom into the selected pixel and redraws the view.
      *
      * @param xPixel x coordinate
@@ -235,6 +251,20 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     public boolean canForward() {
         Log.v(TAG, "can forward current index is " + mCurrentModelIndex + "numModels = " + mNumModels);
         return mCurrentModelIndex != mNumModels-1;
+    }
+
+
+    /**
+     * Checks to see if the currently selected mandelbrot image can be deleted.
+     *
+     * @return true if the currently selected mandelbrot image is not the first in the list.
+     */
+    public boolean canDelete(){
+        if(mCurrentModelIndex==0)
+            return false;
+
+        Log.v(TAG,"can delete");
+        return true;
     }
 
 

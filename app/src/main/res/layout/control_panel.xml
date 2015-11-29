@@ -110,7 +110,7 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
-            android:visibility="invisible"
+            android:enabled="false"
             android:id="@+id/deleteButton"
             android:text="@string/DELETE_BUTTON_TEXT"
             android:onClick="deleteButtonClick"
