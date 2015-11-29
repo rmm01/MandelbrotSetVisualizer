@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
+import java.io.File;
 
 public class Model{
     public  static String TAG                       =   "MODEL";
@@ -15,6 +16,8 @@ public class Model{
     private static double DEFAULT_EDGE_LENGTH       =   4;
     private static int    DEFAULT_ITERATION_LIMIT   =   16;
     private static int    mNumPixels                =   100;
+    private static String EXTENSION                 =   ".png";
+    private static Context mContext;
 
     private String mFileName;
     private double mCenterReal;
@@ -30,7 +33,7 @@ public class Model{
         mIterationLimit     = DEFAULT_ITERATION_LIMIT;
         mNumPixels          = numPixels;
 
-        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + ".png" ;
+        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION;
     }
 
 
@@ -41,7 +44,7 @@ public class Model{
         mIterationLimit     = iterationLimit;
         mNumPixels          = numPixels;
 
-        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + ".png" ;
+        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION ;
     }
 
     /**
@@ -50,6 +53,7 @@ public class Model{
      * @param context the context that has string resource values
      */
     public static void setDefaultValues(Context context){
+        mContext=context;
         Resources resources         = context.getResources();
         DEFAULT_CENTER_REAL         = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
         DEFAULT_CENTER_IMAGINARY    = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
@@ -270,7 +274,7 @@ public class Model{
      */
     public void setNumPixels(int numPixels){
         mNumPixels = numPixels;
-        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() );
+        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION;
     }
 
 
@@ -278,7 +282,9 @@ public class Model{
      * change the file name. this value will be appened fo the front of "_numPixels.png"
      * @param fileName the new name of the file
      */
-    public void changeFileName(String fileName){mFileName = fileName + "_" + mNumPixels + ".png";}
+    public void changeFileName(String fileName) {
+        mFileName = fileName + "_" + mNumPixels + EXTENSION;
+    }
 
 
     /**
@@ -310,7 +316,33 @@ public class Model{
     /**
      * @return get the filename for this instance of the Model. format is "Mandel_numPixels_creationTime"
      */
-    public String getFileName(){return mFileName;}
+    public String getFileName(){
+        return mFileName;
+    }
+
+
+    /**
+     * Get the path of the location of the location of the mandelbrot image corresponding to this
+     * instance of Model. The file may not exist, this path is a indication of where it would be
+     * saved if it was written.
+     *
+     * @return path for the location of the mandelbrot image of this model
+     */
+    public String getFileLocation(){
+        return mContext.getFilesDir().getPath() + "/" + mFileName;
+    }
+
+
+    /**
+     * Gets the File a the location of the location of the mandelbrot image corresponding to this
+     * instance of Model. The file may not exist, this path is a indication of where it would be
+     * saved if it was written.
+     *
+     * @return file for the location of the mandelbrot image of this model
+     */
+    public File getFile(){
+        return new File(getFileLocation());
+    }
 
 
     /**

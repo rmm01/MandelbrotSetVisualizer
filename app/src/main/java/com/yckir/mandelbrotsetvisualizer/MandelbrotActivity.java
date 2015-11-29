@@ -32,7 +32,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     private Button backButton;
     private Button deleteButton;
     private Button homeButton;
-    //private Button saveButton;
+    private Button saveButton;
     //private Button recordButton;
     //private Button playButton;
     //private Button stopButton;
@@ -58,7 +58,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         backButton = (Button) findViewById(R.id.backButton);
         deleteButton = (Button) findViewById(R.id.deleteButton);
         homeButton = (Button) findViewById(R.id.homeButton);
-        //saveButton = (Button) findViewById(R.id.saveButton);
+        saveButton = (Button) findViewById(R.id.saveButton);
         //recordButton = (Button) findViewById(R.id.recordButton);
         //playButton = (Button) findViewById(R.id.playButton);
         //stopButton = (Button) findViewById(R.id.stopButton);
@@ -124,6 +124,8 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
     public void saveButtonClick(View view) {
         Log.v(TAG, "saveButtonClick");
+        String message = mMandelbrotView.saveCurrentImage();
+        Toast.makeText(MandelbrotActivity.this, message, Toast.LENGTH_SHORT).show();
     }
 
 
@@ -294,7 +296,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         backButton.setVisibility(View.INVISIBLE);
         deleteButton.setVisibility(View.INVISIBLE);
         homeButton.setVisibility(View.INVISIBLE);
-        //saveButton.setVisibility(View.INVISIBLE);
+        saveButton.setVisibility(View.INVISIBLE);
         //recordButton.setVisibility(View.INVISIBLE);
         //playButton.setVisibility(View.INVISIBLE);
         //stopButton.setVisibility(View.INVISIBLE);
@@ -324,7 +326,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         backButton.setVisibility(View.VISIBLE);
         deleteButton.setVisibility(View.VISIBLE);
         homeButton.setVisibility(View.VISIBLE);
-        //saveButton.setVisibility(View.VISIBLE);
+        saveButton.setVisibility(View.VISIBLE);
         //recordButton.setVisibility(View.VISIBLE);
         //playButton.setVisibility(View.VISIBLE);
         //stopButton.setVisibility(View.VISIBLE);

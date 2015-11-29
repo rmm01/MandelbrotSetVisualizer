@@ -2,6 +2,7 @@ package com.yckir.mandelbrotsetvisualizer;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
@@ -9,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class Utility {
+    private static final String EXTERNAL_DIR_NAME = "MandelbrotVisualizer";
 
     /**
      * Logs various details about a file.
@@ -23,7 +25,6 @@ public class Utility {
         Log.v("FILE", "path is = " + file.getPath());
         Log.v("FILE", "parent is = " + file.getParent());
         Log.v("FILE", "absolute path is = " + file.getAbsolutePath());
-
         if(file.exists())
             Log.v("FILE", "file exists");
         else
@@ -63,4 +64,37 @@ public class Utility {
         Log.v("FILE", "reading image file " + file.getName());
         return BitmapFactory.decodeFile(file.getPath());
     }
+
+
+    /**
+     * Check to see if the external storage can be written to. This checks to see if external
+     * storage is currently mounted.
+     *
+     * @return true if the external storage can be written to.
+     */
+    public static boolean isExternalStorageWritable(){
+        String state = Environment.getExternalStorageState();
+        return Environment.MEDIA_MOUNTED.equals(state);
+    }
+
+
+    /**
+     * Gets the File for the apps External directory where all images will be saved to. If this
+     * directory does not exits, then this method is being called for first time since app was
+     * installed and the directory will be created and returned.
+     *
+     * @return the apps External directory where all images should be saved to.
+     */
+    public static File getAppExternalDirectory(){
+        File external = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        File file = new File( external , EXTERNAL_DIR_NAME);
+        if(file.exists())
+           return file;
+
+        if(!file.mkdirs()){
+            Log.e("FILE","Directory could not be made");
+        }
+        return file;
+    }
+
 }

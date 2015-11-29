@@ -2,9 +2,11 @@ package com.yckir.mandelbrotsetvisualizer;
 
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.net.Uri;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -213,6 +215,42 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         mCurrentModelIndex--;
         mCurrentModel=mModelHistory.get(mCurrentModelIndex);
         drawView();
+    }
+
+
+    /**
+     * Saved the currently viewed image the apps external storage directory. Sends a broadcast for
+     * the MediaStore content provider that a new image has been created and it should  be handled.
+     *
+     * @return A string message describing the error that occurred, or "File Saved"
+     */
+    public String saveCurrentImage(){
+
+        //TODO: change toast messages to be inside string resources
+        //TODO: check to see if room in external storage exists.
+
+        if( !Utility.isExternalStorageWritable() )
+            return "Cannot save, media is not currently available";
+
+        File internalFile = mCurrentModel.getFile();
+        String albumDirectory = Utility.getAppExternalDirectory().getPath();
+        File savedFile = new File(albumDirectory + "/" + mCurrentModel.getFileName());
+
+        if(!Utility.writeBitmapToPNG(Utility.getFileBitmap(internalFile), savedFile))
+            return "could not write to file location";
+
+        Log.v(TAG,"file saved");
+        Utility.logFileDetails(savedFile);
+
+        //send broadcast to make image visible to gallery
+        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+        Uri contentUri = Uri.fromFile(savedFile);
+        mediaScanIntent.setData(contentUri);
+        getContext().sendBroadcast(mediaScanIntent);
+
+
+        return "File Saved";
+
     }
 
 
