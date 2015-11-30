@@ -33,9 +33,9 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     private Button deleteButton;
     private Button homeButton;
     private Button saveButton;
-    //private Button recordButton;
-    //private Button playButton;
-    //private Button stopButton;
+    private Button recordButton;
+    private Button playButton;
+    private Button stopButton;
 
 
     @Override
@@ -59,9 +59,9 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         deleteButton = (Button) findViewById(R.id.deleteButton);
         homeButton = (Button) findViewById(R.id.homeButton);
         saveButton = (Button) findViewById(R.id.saveButton);
-        //recordButton = (Button) findViewById(R.id.recordButton);
-        //playButton = (Button) findViewById(R.id.playButton);
-        //stopButton = (Button) findViewById(R.id.stopButton);
+        recordButton = (Button) findViewById(R.id.recordButton);
+        playButton = (Button) findViewById(R.id.playButton);
+        stopButton = (Button) findViewById(R.id.stopButton);
 
         centerRealTextField.setOnKeyListener(this);
         centerImaginaryTextField.setOnKeyListener(this);
@@ -79,34 +79,30 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     public void forwardButtonClick(View view) {
         Log.v(TAG, "forwardButtonClick");
         mMandelbrotView.forward();
-        backButton.setEnabled(true);
-        deleteButton.setEnabled(true);
-        forwardButton.setEnabled(mMandelbrotView.canForward());
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
+
+        updateButtonState(mMandelbrotView.getState());
     }
 
 
     public void backButtonClick(View view) {
         Log.v(TAG, "backButtonClick");
         mMandelbrotView.backward();
-        forwardButton.setEnabled(true);
-        backButton.setEnabled(mMandelbrotView.canBackward());
-        deleteButton.setEnabled(mMandelbrotView.canDelete());
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
+
+        updateButtonState(mMandelbrotView.getState());
     }
 
 
     public void deleteButtonClick(View view) {
         Log.v(TAG, "deleteButtonClick");
         mMandelbrotView.delete();
-
-        deleteButton.setEnabled(mMandelbrotView.canDelete());
-        backButton.setEnabled(mMandelbrotView.canBackward());
-        forwardButton.setEnabled(mMandelbrotView.canForward());
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
+
+        updateButtonState(mMandelbrotView.getState());
 
     }
 
@@ -114,11 +110,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     public void homeButtonClick(View view) {
         Log.v(TAG, "homeButtonClick");
         mMandelbrotView.reset();
-        backButton.setEnabled(false);
-        forwardButton.setEnabled(false);
-        deleteButton.setEnabled(false);
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
+
+        updateButtonState(mMandelbrotView.getState());
     }
 
 
@@ -126,21 +121,36 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         Log.v(TAG, "saveButtonClick");
         String message = mMandelbrotView.saveCurrentImage();
         Toast.makeText(MandelbrotActivity.this, message, Toast.LENGTH_SHORT).show();
+
+        updateButtonState(mMandelbrotView.getState());
     }
 
 
     public void recordButtonClick(View view) {
         Log.v(TAG, "recordButtonClick");
+
+        updateButtonState(mMandelbrotView.getState());
+        //int fps = Integer.parseInt( frameRateTextField.getText().toString() );
+        //int duration = Integer.parseInt(recordTimeTextField.getText().toString());
+        //int numFrames = Integer.parseInt(numFramesTextField.getText().toString());
+        //mMandelbrotView.createAnimationImages(fps,duration);
+
     }
 
 
     public void playButtonClick(View view) {
         Log.v(TAG, "playButtonClick");
+
+        updateButtonState(mMandelbrotView.getState());
+        //mMandelbrotView.playAnimation();
     }
 
 
     public void stopButtonClick(View view) {
         Log.v(TAG, "stopButtonClick");
+
+        updateButtonState(mMandelbrotView.getState());
+        //mMandelbrotView.stopAnimation();
     }
 
 
@@ -232,6 +242,40 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     }
 
 
+    public void updateButtonState(int state){
+        switch (state){
+            case MandelbrotView.SINGLE_STATE:
+                forwardButton.setEnabled( false );
+                backButton.setEnabled(    false );
+                deleteButton.setEnabled(  false );
+                homeButton.setEnabled(    false );
+                saveButton.setEnabled(    true );
+                break;
+            case MandelbrotView.CENTER_STATE:
+                forwardButton.setEnabled( true );
+                backButton.setEnabled(    true );
+                deleteButton.setEnabled(  true );
+                homeButton.setEnabled(    true );
+                saveButton.setEnabled(    true );
+                break;
+            case MandelbrotView.END_STATE:
+                forwardButton.setEnabled( false );
+                backButton.setEnabled(    true );
+                deleteButton.setEnabled(  true );
+                homeButton.setEnabled(    true );
+                saveButton.setEnabled(    true );
+                break;
+            case MandelbrotView.FRONT_STATE:
+                forwardButton.setEnabled( true );
+                backButton.setEnabled(    false );
+                deleteButton.setEnabled(  false );
+                homeButton.setEnabled(    true );
+                saveButton.setEnabled(    true );
+                break;
+        }
+    }
+
+
     /**
      * Zooms onto a pixel locaton. Fails if pixel is not on the mandelbrot image.
      *
@@ -244,9 +288,6 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
-        deleteButton.setEnabled(true);
-        backButton.setEnabled(true);
-        forwardButton.setEnabled(mMandelbrotView.canForward());
     }
 
 
@@ -292,14 +333,14 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         frameRateTextField.setEnabled(false);
         recordTimeTextField.setEnabled(false);
 
-        forwardButton.setVisibility(View.INVISIBLE);
-        backButton.setVisibility(View.INVISIBLE);
-        deleteButton.setVisibility(View.INVISIBLE);
-        homeButton.setVisibility(View.INVISIBLE);
-        saveButton.setVisibility(View.INVISIBLE);
-        //recordButton.setVisibility(View.INVISIBLE);
-        //playButton.setVisibility(View.INVISIBLE);
-        //stopButton.setVisibility(View.INVISIBLE);
+        forwardButton.setEnabled(false);
+        backButton.setEnabled(false);
+        deleteButton.setEnabled(false);
+        homeButton.setEnabled(false);
+        saveButton.setEnabled(false);
+        recordButton.setEnabled(false);
+        playButton.setEnabled(false);
+        stopButton.setEnabled(false);
 
     }
 
@@ -321,14 +362,6 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         frameRateTextField.setEnabled(true);
         recordTimeTextField.setEnabled(true);
 
-
-        forwardButton.setVisibility(View.VISIBLE);
-        backButton.setVisibility(View.VISIBLE);
-        deleteButton.setVisibility(View.VISIBLE);
-        homeButton.setVisibility(View.VISIBLE);
-        saveButton.setVisibility(View.VISIBLE);
-        //recordButton.setVisibility(View.VISIBLE);
-        //playButton.setVisibility(View.VISIBLE);
-        //stopButton.setVisibility(View.VISIBLE);
+        updateButtonState(mMandelbrotView.getState());
     }
 }

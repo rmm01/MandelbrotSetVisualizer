@@ -22,6 +22,12 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     private static final String     FIRST_MANDELBROT_FILE_NAME  =   "DefaultMandelbrot.png" ;
     private static final int        DEFAULT_PROGRESS_PERCENT    =    100;
 
+    public  static final int        SINGLE_STATE                =    0;
+    public  static final int        CENTER_STATE                =    1;
+    public  static final int        END_STATE                   =    2;
+    public  static final int        FRONT_STATE                 =    3;
+
+
     private Model               mCurrentModel;
     private LinkedList<Model>   mModelHistory;
     private SurfaceHolder       mHolder;
@@ -34,6 +40,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     private int     mHeight;
     private int     mImageLength;
     private int     mPaddingX;
+    private int     mState;
 
     public MandelbrotView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -87,6 +94,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      */
     private void resetModelList(){
         Model.setDefaultValues(getContext());
+        mState = SINGLE_STATE;
         mNumModels=1;
         mCurrentModelIndex=0;
         mModelHistory = new LinkedList<>();
@@ -99,7 +107,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     /**
      * Update the canvas of the surface view using the currently selected model.
      */
-    private void drawView(){
+    private void drawView() {
         Log.v(TAG, "searching for file " + mCurrentModel.getFileName());
         File file = new File( getContext().getFilesDir(), mCurrentModel.getFileName());
         if(!file.exists()) {
@@ -123,7 +131,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      */
     private void displayMandelbrotImage(File file){
         Bitmap myBitmap = Utility.getFileBitmap(file);
-        if(myBitmap == null) {
+        if (myBitmap == null) {
             Log.e("FILE", "could not read " + file.getName());
             return;
         }
@@ -165,6 +173,20 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
 
+    private void setState(){
+        if(mNumModels == 1)
+            mState= SINGLE_STATE;
+        else if(canBackward() && canForward())
+            mState=CENTER_STATE;
+        else if(canForward())
+            mState=FRONT_STATE;
+        else if(canBackward())
+            mState=END_STATE;
+        else
+            mState=-1;
+    }
+
+
     /**
      * Move backwards in the mandelbrot image list and redraws the view.
      */
@@ -176,6 +198,8 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         mCurrentModelIndex--;
         mCurrentModel=mModelHistory.get(mCurrentModelIndex);
         drawView();
+
+        setState();
     }
 
 
@@ -190,6 +214,8 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         mCurrentModelIndex++;
         mCurrentModel=mModelHistory.get(mCurrentModelIndex);
         drawView();
+
+        setState();
     }
 
 
@@ -199,6 +225,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     public void reset(){
         resetModelList();
         drawView();
+        setState();
     }
 
 
@@ -215,6 +242,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         mCurrentModelIndex--;
         mCurrentModel=mModelHistory.get(mCurrentModelIndex);
         drawView();
+        setState();
     }
 
 
@@ -236,7 +264,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         String albumDirectory = Utility.getAppExternalDirectory().getPath();
         File savedFile = new File(albumDirectory + "/" + mCurrentModel.getFileName());
 
-        if(!Utility.writeBitmapToPNG(Utility.getFileBitmap(internalFile), savedFile))
+        if (!Utility.writeBitmapToPNG(Utility.getFileBitmap(internalFile), savedFile))
             return "could not write to file location";
 
         Log.v(TAG,"file saved");
@@ -248,6 +276,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         mediaScanIntent.setData(contentUri);
         getContext().sendBroadcast(mediaScanIntent);
 
+        setState();
 
         return "File Saved";
 
@@ -270,8 +299,32 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         copyModel.recenterZoom(xPixel, yPixel);
         addModelToList(copyModel);
         drawView();
+        setState();
         return true;
     }
+
+
+    public int getState(){
+        Log.v(TAG, "State = " + getStateString());
+        return mState;
+    }
+
+
+    public String getStateString(){
+        switch (mState){
+            case SINGLE_STATE:
+                return "SINGLE_STATE";
+            case FRONT_STATE:
+                return "FRONT_STATE";
+            case CENTER_STATE:
+                return "CENTER_STATE";
+            case END_STATE:
+                return "END_STATE";
+            default:
+                return"UNKNOWN";
+        }
+    }
+
 
 
     /**
