@@ -2,11 +2,13 @@ package com.yckir.mandelbrotsetvisualizer;
 
 
 import android.content.Context;
-import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.net.Uri;
+import android.graphics.drawable.AnimationDrawable;
+import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -19,47 +21,53 @@ import java.util.LinkedList;
 public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callback{
 
     public  static final String     TAG                         =   "MANDELBROT_VIEW";
-    private static final String     FIRST_MANDELBROT_FILE_NAME  =   "DefaultMandelbrot.png" ;
-    private static final int        DEFAULT_PROGRESS_PERCENT    =    100;
+    private static final String     FIRST_MANDELBROT_FILE_NAME  =   "DefaultMandelbrot" ;
+    public  static final int        SINGLE_STATE                =   0;
+    public  static final int        CENTER_STATE                =   1;
+    public  static final int        END_STATE                   =   2;
+    public  static final int        FRONT_STATE                 =   3;
+    public  static final int        LOADED_STATE                =   4;
 
-    public  static final int        SINGLE_STATE                =    0;
-    public  static final int        CENTER_STATE                =    1;
-    public  static final int        END_STATE                   =    2;
-    public  static final int        FRONT_STATE                 =    3;
+    private Model                   mCurrentModel;
+    private LinkedList<Model>       mModelHistory;
+    private SurfaceHolder           mHolder;
+    private ProgressListener        mProgressListener;
+    private AnimationDrawable       mAnimationDrawable;
+    private File                    mPicDir;
+    private File                    mAnimationDir;
+    private File                    mNavDir;
+    private File                    mCurrentAnimationDir;
+    private Bitmap                  mMyBitmap;
 
-
-    private Model               mCurrentModel;
-    private LinkedList<Model>   mModelHistory;
-    private SurfaceHolder       mHolder;
-    private ProgressListener    mProgressListener;
-
-    private int     mNumModels;
-    private int     mCurrentModelIndex;
-    private int     mProgressPercent;
     private int     mWidth;
     private int     mHeight;
     private int     mImageLength;
     private int     mPaddingX;
+    private int     mNumModels;
+    private int     mCurrentModelIndex;
     private int     mState;
+    private int     mProgressParts;
 
     public MandelbrotView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        mHeight = getHeight( );
+        //set dimensions
+        mHeight = getHeight();
         mWidth  = getWidth();
-        mPaddingX = 0;
         mImageLength = Math.min(mWidth, mHeight);
-        Log.v( TAG, "constructor w = " + mWidth + ", h = " + mHeight );
+        mPaddingX = mWidth-mImageLength;
 
-        resetModelList( );
+        //initialize model list
+        resetModelList();
 
+        //get view holder for drawing on separate thread
         mHolder = getHolder( );
         mHolder.addCallback( this );
 
-        mProgressPercent = DEFAULT_PROGRESS_PERCENT;
+        //set empty listener
         mProgressListener = new ProgressListener( ) {
             @Override
-            public void onProgressStart() {
+            public void onProgressStart(int maxProgress) {
 
             }
 
@@ -73,6 +81,16 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
 
             }
         };
+        mProgressParts = 0;
+
+        //create storage directories
+        Utility.makeStorageDirectories(context);
+        mPicDir       = Utility.getExternalPictureDir();
+        mAnimationDir = Utility.getExternalAnimationDir();
+        mNavDir       = Utility.getInternalNavigationDir(context);
+
+        mAnimationDrawable = null;
+        mMyBitmap = null;
     }
 
 
@@ -86,6 +104,17 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         mNumModels=mCurrentModelIndex+1;
         mModelHistory.add(mCurrentModelIndex, model);
         mCurrentModel=model;
+    }
+
+
+    /**
+     * Removes the current model from list. Should only be called if canDelete returns true.
+     */
+    private void removeCurrentModelFromList(){
+        mModelHistory.remove(mCurrentModelIndex);
+        mNumModels--;
+        mCurrentModelIndex--;
+        mCurrentModel=mModelHistory.get(mCurrentModelIndex);
     }
 
 
@@ -105,34 +134,29 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
 
 
     /**
-     * Update the canvas of the surface view using the currently selected model.
+     * Update the canvas of the surface view using the currently selected model. If the file has not
+     * been drawn yet, it will be drawn on a separate thread. This method terminating does not
+     * indicate that the view has been drawn.
      */
     private void drawView() {
-        Log.v(TAG, "searching for file " + mCurrentModel.getFileName());
-        File file = new File( getContext().getFilesDir(), mCurrentModel.getFileName());
-        if(!file.exists()) {
-            writeAndDisplayMandelbrotImage(file, mImageLength);
-            return;
-        }
-
-        displayMandelbrotImage(file);
-        Utility.logFileDetails(file);
-
-        //DrawingAsyncTask task = new DrawingAsyncTask(mCurrentModel, mProgressListener,mProgressPercent);
-        //task.execute(mHolder);
+        File currentModelFile = new File( mNavDir, mCurrentModel.getFileName());
+        if(currentModelFile.exists())
+            displayMandelbrotImage(currentModelFile);
+        else
+            writeAndDisplayMandelbrotImage(currentModelFile);
     }
 
 
     /**
-     * Displays on the surface view the image at the given file location. Nothing happens if the
+     * Displays on the surface view the image at the given file location. Error is logged if the
      * file could not be read.
      *
      * @param file the file location.
      */
     private void displayMandelbrotImage(File file){
-        Bitmap myBitmap = Utility.getFileBitmap(file);
+        Bitmap myBitmap = BitmapFactory.decodeFile(file.getPath());
         if (myBitmap == null) {
-            Log.e("FILE", "could not read " + file.getName());
+            Log.e(TAG, "DisplayBitmap: could not read " + file.getName());
             return;
         }
 
@@ -141,6 +165,69 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawBitmap(myBitmap, mPaddingX, 0, null);
         mHolder.unlockCanvasAndPost(canvas);
     }
+    //private static int currentFrame =0;
+
+
+    /**
+     * Recursive function that calls itself, creating the animation frames for the current model list.
+     * First Frame should be frame zero.
+     *
+     * @param fps frames per second
+     * @param lastFrameNum total number of frames
+     * @param currentFrame the current frame being animated.
+     */
+    private void createAnimationFrame(final int fps, final int lastFrameNum,final int currentFrame){
+        int modelNum = currentFrame /fps;
+        int frameNum = currentFrame - modelNum*fps;
+        double zoom = (double)frameNum/fps;
+        ProgressListener listener = new ProgressListener() {
+            @Override
+            public void onProgressStart(int maxProgress) {
+            }
+
+            @Override
+            public void onProgressUpdate(int progress) {
+            }
+
+            @Override
+            public void onProgressFinished() {
+                mProgressListener.onProgressUpdate(currentFrame);
+                File saveFile = new File(mCurrentAnimationDir, "Mandel" + currentFrame + ".png");
+                Utility.writeBitmapToPNG(mMyBitmap, saveFile);
+                Utility.sentMediaStoreBroadcast(saveFile, getContext());
+                createAnimationFrame(fps, lastFrameNum,currentFrame+1);
+            }
+        };
+
+        Log.v("RECORD","fps = " + fps + ", currentFrame = " + currentFrame + ", lastFrameNum = " + lastFrameNum +
+                ", modelNum = " + modelNum + ", frameNum= " + frameNum + ", zoom = " + zoom);
+
+        //image exits already, copy,rename,and move it.
+        if(frameNum==0) {
+            mProgressListener.onProgressUpdate(currentFrame + 1);
+            File saveFile = new File(mCurrentAnimationDir, "Mandel" + currentFrame + ".png");
+            String path =mNavDir.getPath() + "/" + mModelHistory.get(modelNum).getFileName();
+            Log.v("RECORD", "path for nav model = " + path);
+            Utility.writeBitmapToPNG(BitmapFactory.decodeFile(path), saveFile);
+            Utility.sentMediaStoreBroadcast(saveFile, getContext());
+            if(currentFrame ==lastFrameNum) {
+                //- case if for when fps=1
+                mProgressListener.onProgressFinished();
+                return;
+            }
+            else {
+                mProgressListener.onProgressUpdate(currentFrame);
+                createAnimationFrame(fps,lastFrameNum,currentFrame+1);
+                return;
+            }
+        }
+
+
+        Model zoomedModel = Model.zoom(mModelHistory.get(modelNum), mModelHistory.get(modelNum + 1), zoom);
+
+        DrawBitmapTask task = new DrawBitmapTask(zoomedModel, 1,listener);
+        task.execute(mMyBitmap);
+    }
 
 
     /**
@@ -148,74 +235,72 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      * This method returning does not indicate that all these steps have completed.
      *
      * @param file the file to write to
-     * @param imageSize the image size
      */
-    private void writeAndDisplayMandelbrotImage(final File file, int imageSize){
-        Log.v(TAG, "writeAndDisplayMandelbrotImage");
-        final Bitmap bitmap = Bitmap.createBitmap(imageSize, imageSize, Bitmap.Config.ARGB_8888);
+    private void writeAndDisplayMandelbrotImage(final File file){
         ProgressListener listener = new ProgressListener() {
             @Override
-            public void onProgressStart() {mProgressListener.onProgressStart();}
+            public void onProgressStart(int maxProgress) {mProgressListener.onProgressStart(maxProgress);}
 
             @Override
             public void onProgressUpdate(int progress) {mProgressListener.onProgressUpdate(progress);}
 
             @Override
             public void onProgressFinished() {
-                Utility.writeBitmapToPNG(bitmap, file);
+                Utility.writeBitmapToPNG(mMyBitmap, file);
                 displayMandelbrotImage(file);
-                Utility.logFileDetails(file);
                 mProgressListener.onProgressFinished();
             }
         };
-        DrawBitmapTask task = new DrawBitmapTask(mCurrentModel,listener,mProgressPercent);
-        task.execute(bitmap);
+        DrawBitmapTask task = new DrawBitmapTask(mCurrentModel,mProgressParts,listener);
+        task.execute(mMyBitmap);
     }
 
 
-    private void setState(){
+    /**
+     * update the current state
+     */
+    private void updateState(){
         if(mNumModels == 1)
             mState= SINGLE_STATE;
         else if(canBackward() && canForward())
             mState=CENTER_STATE;
         else if(canForward())
             mState=FRONT_STATE;
-        else if(canBackward())
+        else //(canBackward())
             mState=END_STATE;
-        else
-            mState=-1;
+
     }
 
 
     /**
-     * Move backwards in the mandelbrot image list and redraws the view.
+     * Move backwards in the mandelbrot image list and redraws the view. Logs error if currently
+     * viewing the first image.
      */
     public void backward(){
-        if( mCurrentModelIndex == 0 ){
+        if( !canBackward() ){
             Log.e(TAG, "cannot go backward");
             return;
         }
         mCurrentModelIndex--;
         mCurrentModel=mModelHistory.get(mCurrentModelIndex);
         drawView();
-
-        setState();
+        updateState();
     }
 
 
     /**
-     * Move forward in the mandelbrot image list and redraws the view.
+     * Move forward in the mandelbrot image list and redraws the view. Logs error if currently
+     * viewing the last image.
      */
     public void forward(){
-        if( mCurrentModelIndex == mNumModels - 1 ){
+        if( !canForward() ){
             Log.e(TAG, "cannot go forward");
             return;
         }
         mCurrentModelIndex++;
         mCurrentModel=mModelHistory.get(mCurrentModelIndex);
         drawView();
-
-        setState();
+        updateState();
     }
 
 
@@ -225,24 +310,21 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     public void reset(){
         resetModelList();
         drawView();
-        setState();
+        updateState();
     }
 
 
     /**
-     * Delete the currently displayed Mandelbrot image.
+     * Delete the currently displayed Mandelbrot image. Logs error if cannot delete current image.
      */
     public void delete(){
         if(!canDelete()){
-            Log.e(TAG, "cannot delete last element");
+            Log.e(TAG, "cannot delete last remaining element");
             return;
         }
-        mModelHistory.remove(mCurrentModelIndex);
-        mNumModels--;
-        mCurrentModelIndex--;
-        mCurrentModel=mModelHistory.get(mCurrentModelIndex);
+        removeCurrentModelFromList();
         drawView();
-        setState();
+        updateState();
     }
 
 
@@ -252,34 +334,112 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      *
      * @return A string message describing the error that occurred, or "File Saved"
      */
-    public String saveCurrentImage(){
-
+    public String saveCurrentImage(String fileName){
         //TODO: change toast messages to be inside string resources
-        //TODO: check to see if room in external storage exists.
 
         if( !Utility.isExternalStorageWritable() )
             return "Cannot save, media is not currently available";
 
-        File internalFile = mCurrentModel.getFile();
-        String albumDirectory = Utility.getAppExternalDirectory().getPath();
-        File savedFile = new File(albumDirectory + "/" + mCurrentModel.getFileName());
+        File internalFile = new File(mNavDir,mCurrentModel.getFileName());
+        File savedFile = new File(mPicDir,fileName+".png");
 
-        if (!Utility.writeBitmapToPNG(Utility.getFileBitmap(internalFile), savedFile))
-            return "could not write to file location";
+        if(!Utility.imageSpaceExists(mPicDir))
+            return "Insufficient available storage space";
 
-        Log.v(TAG,"file saved");
-        Utility.logFileDetails(savedFile);
+        if (!Utility.writeBitmapToPNG(BitmapFactory.decodeFile(internalFile.getPath()), savedFile))
+            return "Could not write to file location";
 
-        //send broadcast to make image visible to gallery
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        Uri contentUri = Uri.fromFile(savedFile);
-        mediaScanIntent.setData(contentUri);
-        getContext().sendBroadcast(mediaScanIntent);
+        Utility.sentMediaStoreBroadcast(savedFile, getContext());
 
-        setState();
-
+        updateState();
         return "File Saved";
+    }
 
+
+    /**
+     * Create the animation frames for the current model list. The frames are created on a separate
+     * thread one after the other. The total number of frames created will be
+     * fps * duration * (numModels-1) + 1. It is expected to take a large amount of time to create
+     * the frames.
+     *
+     * @param fps frames per second
+     * @param duration number of seconds between the model list. the total duration of the animation
+     *                 will be duration * ( numModels - 1 )
+     * @param animationName the name of the animation
+     */
+    public void recordAnimation(final int fps, final int duration, final String animationName){
+        //TODO: make return string for toast messages
+        final int lastFrameNumber = duration * fps * (mNumModels-1);
+        int delay = duration*1000/fps;
+        mCurrentAnimationDir = new File(mAnimationDir,animationName);
+        if(!mCurrentAnimationDir.mkdirs()){
+            Log.e(TAG, "animation name exists: " + animationName);
+            return;
+        }
+        Utility.writeAnimationDetails(delay, lastFrameNumber, mCurrentAnimationDir);
+        mProgressListener.onProgressStart(lastFrameNumber-1);
+        createAnimationFrame(fps, lastFrameNumber,0);
+    }
+
+
+    /**
+     * Loads the selected animation. NOTE: this animation object requires
+     * a large amount of memory and can possibly cause an out of memory exception. You Must call
+     * closeAnimation Prior to loading a new animation ro recycle the bitmaps it has.
+     *
+     * @param which index for the selected animation in animation directory
+     */
+    public void load(int which){
+        //TODO: make utility function String getAnimationFileName(int i)
+        //Todo: make this function do work on separate thread
+        String animationName = getAnimationTitles()[which];
+        mAnimationDrawable = new AnimationDrawable();
+        Resources resources = getResources();
+        BitmapDrawable drawable;
+        File animationLocation = new File(mAnimationDir, animationName);
+
+        String[] contents = Utility.splitAnimationFileDetails(Utility.readFile(animationLocation));
+
+        if(contents.length!=2) {
+            Log.e(TAG, "error reading animation, details length = " + contents.length);
+            return;
+        }
+        int delay = Utility.getAnimationFileDelay(contents);
+        int lastFrameNum = Utility.getAnimationFileLastFrame(contents);
+
+        for (int i = 0;i<=lastFrameNum;i++){
+            drawable = new BitmapDrawable(resources,animationLocation.getPath() + "/Mandel" + i + ".png");
+            mAnimationDrawable.addFrame(drawable,delay);
+        }
+
+        mState=LOADED_STATE;
+    }
+
+
+    /**
+     * Plays the AnimationDrawable stored in the MandelbrotView from the beginning. You should
+     * attach the AnimationDrawable to another view prior to this call. use getAnimationDrawable to
+     * get a reference.
+     */
+    public void playAnimation(){
+        if(mAnimationDrawable.isRunning())
+            mAnimationDrawable.stop();
+        mAnimationDrawable.start();
+    }
+
+
+    /**
+     * stops the currently loaded animation and recycles its bitmaps. This should always be called
+     * in between loadAnimation calls or risk out of memory exception.
+     */
+    public void closeAnimation(){
+        if(mAnimationDrawable.isRunning())
+            mAnimationDrawable.stop();
+        for(int i = 0; i<mAnimationDrawable.getNumberOfFrames();i++){
+            ((BitmapDrawable)mAnimationDrawable.getFrame(i)).getBitmap().recycle();
+        }
+        mAnimationDrawable = null;
+        updateState();
     }
 
 
@@ -299,17 +459,23 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         copyModel.recenterZoom(xPixel, yPixel);
         addModelToList(copyModel);
         drawView();
-        setState();
+        updateState();
         return true;
     }
 
 
-    public int getState(){
+    /**
+     * @return the id of the current state of the view
+     */
+    public int getNavigationState() {
         Log.v(TAG, "State = " + getStateString());
         return mState;
     }
 
 
+    /**
+     * @return the string of the current state of the view
+     */
     public String getStateString(){
         switch (mState){
             case SINGLE_STATE:
@@ -320,18 +486,39 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
                 return "CENTER_STATE";
             case END_STATE:
                 return "END_STATE";
+            case LOADED_STATE:
+                return "LOADED_STATE";
             default:
                 return"UNKNOWN";
         }
     }
 
 
+    /**
+     * Get the titles of the animations stored in the animation directory.
+     *
+     * @return titles of the animations
+     */
+    public String[] getAnimationTitles(){
+        return mAnimationDir.list();
+    }
+
+
+    /**
+     * Get a reference to the AnimationDrawable of the loaded animation. The receiver should only
+     * use the reference to call View.getAnimationDrawable( AnimationDrawable).
+     *
+     * @return the AnimationDrawable of the loaded animation.
+     */
+    public AnimationDrawable getAnimationDrawable(){
+        return mAnimationDrawable;
+    }
+
 
     /**
      * @return true if not currently viewing first image in list.
      */
     public boolean canBackward() {
-        Log.v(TAG, "can backwards current index is " + mCurrentModelIndex);
         return mCurrentModelIndex != 0;
     }
 
@@ -340,7 +527,6 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      * @return true if not currently viewing last image in list.
      */
     public boolean canForward() {
-        Log.v(TAG, "can forward current index is " + mCurrentModelIndex + "numModels = " + mNumModels);
         return mCurrentModelIndex != mNumModels-1;
     }
 
@@ -351,11 +537,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      * @return true if the currently selected mandelbrot image is not the first in the list.
      */
     public boolean canDelete(){
-        if(mCurrentModelIndex==0)
-            return false;
-
-        Log.v(TAG,"can delete");
-        return true;
+        return mCurrentModelIndex > 0;
     }
 
 
@@ -400,14 +582,12 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      * Set a listener that will be notified about progress events.
      *
      * @param listener the listener that will have its methods called during progress events
-     * @param progressPercent the listener will be notified when a multiple of this value is the
-     *                        current progress. if the value is 5, then the listener will be
-     *                        notified 20 times, at 5,10,..95,100.
+     * @param numParts the listener will be notified this many times  throughout the duration
+     *                 of task about how much progress has been made.
      */
-    public void setProgressListener(ProgressListener listener, int progressPercent){
-        //TODO: set progress listener to work in increments instead of percent
+    public void setProgressIncrementListener(ProgressListener listener, int numParts){
         mProgressListener = listener;
-        mProgressPercent = progressPercent;
+        mProgressParts = numParts;
     }
 
 
@@ -427,8 +607,8 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        //Todo: make it so that changing teh fields on the default image does not override the default image
-        //Todo: make is sot that the surface changes dosnt reset the list
+        //Todo: make it so that changing the fields on the default image does not override the default image
+        //Todo: make is sot that the surface changes dosn't reset the list
         if( mWidth == width && mHeight == height ) {
             Log.v(TAG, "surface unchanged w = " +mWidth + ", h = " +mHeight );
             return;
@@ -444,7 +624,7 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
 
         mCurrentModel.setNumPixels(mImageLength);
         mCurrentModel.changeFileName(FIRST_MANDELBROT_FILE_NAME);
-        //createDefaultImage();
+        mMyBitmap = Bitmap.createBitmap(mImageLength, mImageLength, Bitmap.Config.ARGB_8888);
         drawView();
     }
 
@@ -471,15 +651,17 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     public interface ProgressListener{
 
         /**
-         * Called when the the Mandelbrot image is about to be constructed.
+         * Called when the image is about to be drawn.
+         *
+         * @param maxProgress set how many times you want to get notified about progress.
          */
-        void onProgressStart();
+        void onProgressStart(int maxProgress);
 
 
         /**
-         * Called when progress has been made to the Mandelbrot image.
+         * Called when the image has made progress.
          *
-         * @param progress how much total progress in percent has been made.
+         * @param progress the amount of progress out of maxProgress that has been made
          */
         void onProgressUpdate(int progress);
 

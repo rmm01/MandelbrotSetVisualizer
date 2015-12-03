@@ -2,7 +2,6 @@
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
 
@@ -18,19 +17,25 @@
 
     <com.yckir.mandelbrotsetvisualizer.MandelbrotView
         android:id="@+id/mandelbrot_view"
+        android:visibility="visible"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@id/grid"/>
-    <me.zhanghai.android.materialprogressbar.MaterialProgressBar
+    <ImageView
+        android:id="@+id/animationImageView"
+        android:visibility="invisible"
+        android:contentDescription="@string/ImageViewContentDescription"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/grid"/>
+
+    <ProgressBar
         android:id="@+id/progress_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:indeterminate="false"
         android:visibility="invisible"
-        app:mpb_progressStyle="horizontal"
         style="@style/Widget.MaterialProgressBar.ProgressBar.Horizontal"
         />
-
-
 
 </RelativeLayout>

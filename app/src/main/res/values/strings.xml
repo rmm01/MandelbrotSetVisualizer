@@ -14,13 +14,15 @@
     <string name="SAVE_BUTTON_TEXT">Save</string>
     <string name="RECORD_BUTTON_TEXT">Record</string>
     <string name="PLAY_BUTTON_TEXT">Play</string>
-    <string name="STOP_BUTTON_TEXT">Stop</string>
+    <string name="CLOSE_BUTTON_TEXT">Close</string>
     <string name="DEFAULT_CENTER_REAL">0.0</string>
     <string name="DEFAULT_CENTER_IMAGINARY">0.0</string>
     <string name="DEFAULT_EDGE_LENGTH">4.0</string>
     <string name="DEFAULT_ITERATION_LIMIT">64</string>
     <string name="DEFAULT_FPS">20</string>
     <string name="DEFAULT_RECORD_TIME">1</string>
-    <string name="DEFAULT_NUM_FRAMES">20</string>
+    <string name="DEFAULT_NUM_FRAMES">1</string>
+    <string name="LOAD_BUTTON_TEXT">LOAD</string>
+    <string name="ImageViewContentDescription">AnimationView</string>
 
 </resources>

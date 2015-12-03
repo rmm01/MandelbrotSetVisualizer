@@ -135,19 +135,22 @@
             android:gravity="center"
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
-        <TextView
-            android:gravity="center"
-            grid:layout_columnWeight="1"
-            grid:layout_gravity="center"/>
-
-
-        <!-- 5th row -->
-
         <Button
             android:id="@+id/recordButton"
             android:enabled="false"
             android:text="@string/RECORD_BUTTON_TEXT"
             android:onClick="recordButtonClick"
+            android:gravity="center"
+            grid:layout_columnWeight="1"
+            grid:layout_gravity="center"/>
+
+
+
+        <!-- 5th row -->
+        <Button
+            android:id="@+id/loadButton"
+            android:text="@string/LOAD_BUTTON_TEXT"
+            android:onClick="loadButtonClick"
             android:gravity="center"
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
@@ -160,10 +163,10 @@
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>
         <Button
-            android:id="@+id/stopButton"
+            android:id="@+id/closeButton"
             android:enabled="false"
-            android:text="@string/STOP_BUTTON_TEXT"
-            android:onClick="stopButtonClick"
+            android:text="@string/CLOSE_BUTTON_TEXT"
+            android:onClick="closeButtonClick"
             android:gravity="center"
             grid:layout_columnWeight="1"
             grid:layout_gravity="center"/>

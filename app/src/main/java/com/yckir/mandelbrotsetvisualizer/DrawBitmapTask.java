@@ -6,26 +6,26 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.view.SurfaceHolder;
 
 public class DrawBitmapTask extends AsyncTask<Bitmap, Integer, Bitmap> {
 
     public static String TAG = "DRAWING_ASYNC_TASK";
     private Model mModel;
     private MandelbrotView.ProgressListener mListener;
-    private int mProgressPercent;
+    private int mProgressParts;
 
     /**
+     * Construct a task that will draw the mandelbrot image and notify a listener.
      *
      * @param model has the details on ow to draw
+     * @param progressParts the listener should be notifies this many times throughout the progress
+     *                      of the task.
      * @param listener the listener to notify when progress begins, is being made, and finishes
-     * @param progressPercent the listener should be when a multiple of this progress value is made.
-     *                        must be between > 0 and <=100
      */
-    public DrawBitmapTask(Model model, MandelbrotView.ProgressListener listener, int progressPercent){
+    public DrawBitmapTask(Model model, int progressParts, MandelbrotView.ProgressListener listener){
         mModel = model;
         mListener=listener;
-        mProgressPercent = progressPercent;
+        mProgressParts = progressParts;
     }
 
 
@@ -33,14 +33,14 @@ public class DrawBitmapTask extends AsyncTask<Bitmap, Integer, Bitmap> {
     protected void onPreExecute() {
         super.onPreExecute();
         if( mListener != null )
-            mListener.onProgressStart();
+            mListener.onProgressStart(mProgressParts);
     }
 
 
     @Override
     protected Bitmap doInBackground(Bitmap... params) {
         if(params.length==0){
-            Log.e(TAG, "error, canvas passed to DrawingAsyncTask.execute is null");
+            Log.e(TAG, "error, bitmap passed to DrawBitmapTask.execute is null");
             return null;
         }
 
@@ -49,19 +49,22 @@ public class DrawBitmapTask extends AsyncTask<Bitmap, Integer, Bitmap> {
         canvas.drawColor(Color.WHITE);
 
         long startTime = System.currentTimeMillis();
+
+        double progressPercent = 100.0/mProgressParts;
+
         int previousProgress = 0;
         int currentProgress = previousProgress;
-
+        int partNumber = 0;
         while( currentProgress < 100 ) {
-
+            partNumber++;
             previousProgress = currentProgress;
-            currentProgress += mProgressPercent;
+            currentProgress = (int)(progressPercent*partNumber);
 
             if( currentProgress > 100 )
                 currentProgress = 100;
 
             mModel.partialDrawCanvas( previousProgress, currentProgress, canvas );
-            publishProgress( currentProgress );
+            publishProgress( partNumber );
         }
 
         Log.v(TAG, "total task time =: " + ( System.currentTimeMillis() - startTime ) + " ms");

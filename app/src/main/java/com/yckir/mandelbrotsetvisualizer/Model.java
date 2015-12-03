@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
-import java.io.File;
 
 public class Model{
     public  static String TAG                       =   "MODEL";
@@ -17,7 +16,6 @@ public class Model{
     private static int    DEFAULT_ITERATION_LIMIT   =   16;
     private static int    mNumPixels                =   100;
     private static String EXTENSION                 =   ".png";
-    private static Context mContext;
 
     private String mFileName;
     private double mCenterReal;
@@ -47,18 +45,54 @@ public class Model{
         mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION ;
     }
 
+
+    /**
+     * Move the start value a percentage of the way towards the end value.
+     *
+     * @param start the start value
+     * @param end the end value
+     * @param percent fraction between 0 and 1 representing how far to move towards end value
+     * @return the start value moved a percentage of the way towards the end value
+     */
+    private static double move(double start, double end, double percent){
+        double distance = Math.abs(start - end);
+        double displacement = distance*percent;
+        if(start<end)
+            return start+displacement;
+        return start - displacement;
+
+    }
+
+
     /**
      * Set the default values.
      *
      * @param context the context that has string resource values
      */
     public static void setDefaultValues(Context context){
-        mContext=context;
         Resources resources         = context.getResources();
         DEFAULT_CENTER_REAL         = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_REAL ) );
         DEFAULT_CENTER_IMAGINARY    = Double.parseDouble( resources.getString( R.string.DEFAULT_CENTER_IMAGINARY) );
         DEFAULT_EDGE_LENGTH         = Double.parseDouble( resources.getString( R.string.DEFAULT_EDGE_LENGTH ) );
         DEFAULT_ITERATION_LIMIT     = Integer.parseInt(resources.getString(R.string.DEFAULT_ITERATION_LIMIT));
+    }
+
+
+    /**
+     * Performs a partial zoom from two models.
+     *
+     * @param startModel the original position of the model
+     * @param endModel the end position of the model
+     * @param zoomPercent a fraction between 0 and 1 representing how mush model 1 should zoom
+     *                    towards model 2
+     * @return a new model that has bee zoomed.
+     */
+    public static Model zoom(Model startModel, Model endModel, double zoomPercent){
+        double centerReal = move(startModel.getCenterReal(), endModel.getCenterReal(), zoomPercent);
+        double centerImaginary = move(startModel.getCenterImaginary(), endModel.getCenterImaginary(), zoomPercent);
+        double edgeLength = move(startModel.getEdgeLength(), endModel.getEdgeLength(), zoomPercent);
+        int iterationLimit =(int)move(startModel.getIterationLimit(), endModel.getIterationLimit(), zoomPercent);
+        return new Model(centerReal,centerImaginary,edgeLength,iterationLimit,mNumPixels);
     }
 
 
@@ -318,30 +352,6 @@ public class Model{
      */
     public String getFileName(){
         return mFileName;
-    }
-
-
-    /**
-     * Get the path of the location of the location of the mandelbrot image corresponding to this
-     * instance of Model. The file may not exist, this path is a indication of where it would be
-     * saved if it was written.
-     *
-     * @return path for the location of the mandelbrot image of this model
-     */
-    public String getFileLocation(){
-        return mContext.getFilesDir().getPath() + "/" + mFileName;
-    }
-
-
-    /**
-     * Gets the File a the location of the location of the mandelbrot image corresponding to this
-     * instance of Model. The file may not exist, this path is a indication of where it would be
-     * saved if it was written.
-     *
-     * @return file for the location of the mandelbrot image of this model
-     */
-    public File getFile(){
-        return new File(getFileLocation());
     }
 
 

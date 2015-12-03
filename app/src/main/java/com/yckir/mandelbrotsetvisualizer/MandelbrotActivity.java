@@ -1,24 +1,35 @@
 package com.yckir.mandelbrotsetvisualizer;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import me.zhanghai.android.materialprogressbar.MaterialProgressBar;
+import java.lang.ref.WeakReference;
+
+import me.zhanghai.android.materialprogressbar.HorizontalProgressDrawable;
 
 public class MandelbrotActivity extends AppCompatActivity implements View.OnTouchListener,
         View.OnKeyListener, MandelbrotView.ProgressListener{
 
     public static String TAG = "MANDELBROT_ACTIVITY";
+    public static  int MAX_PROGRESS = 100;
 
     private MandelbrotView mMandelbrotView;
-    private MaterialProgressBar mProgressBar;
+    private ProgressBar mProgressBar;
 
     private EditText centerRealTextField;
     private EditText centerImaginaryTextField;
@@ -32,10 +43,20 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     private Button backButton;
     private Button deleteButton;
     private Button homeButton;
+    private Button loadButton;
     private Button saveButton;
     private Button recordButton;
     private Button playButton;
-    private Button stopButton;
+    private Button closeButton;
+
+    private ImageView mAnimationView;
+
+    private AlertDialog mRecordDialog;
+    private AlertDialog mSaveFileDialog;
+    private AlertDialog.Builder mLoadAnimationBuilder;
+    private DialogInterface.OnClickListener mLoadListener;
+
+    private DelayedRecordHandler mHandler;
 
 
     @Override
@@ -44,7 +65,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         setContentView(R.layout.activity_mandelbrot);
 
         mMandelbrotView = (MandelbrotView) findViewById(R.id.mandelbrot_view);
-        mProgressBar = (MaterialProgressBar) findViewById(R.id.progress_bar);
+        mAnimationView = (ImageView) findViewById(R.id.animationImageView);
+        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        mProgressBar.setProgressDrawable(new HorizontalProgressDrawable(this));
+
 
         centerRealTextField = (EditText) findViewById(R.id.centerRealTextField);
         centerImaginaryTextField = (EditText) findViewById(R.id.centerImaginaryTextField);
@@ -59,9 +83,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         deleteButton = (Button) findViewById(R.id.deleteButton);
         homeButton = (Button) findViewById(R.id.homeButton);
         saveButton = (Button) findViewById(R.id.saveButton);
+        loadButton = (Button) findViewById(R.id.loadButton);
         recordButton = (Button) findViewById(R.id.recordButton);
         playButton = (Button) findViewById(R.id.playButton);
-        stopButton = (Button) findViewById(R.id.stopButton);
+        closeButton = (Button) findViewById(R.id.closeButton);
 
         centerRealTextField.setOnKeyListener(this);
         centerImaginaryTextField.setOnKeyListener(this);
@@ -71,8 +96,71 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         recordTimeTextField.setOnKeyListener(this);
 
         mMandelbrotView.setOnTouchListener(this);
-        mMandelbrotView.setProgressListener(this,5);
+        mMandelbrotView.setProgressIncrementListener(this, MAX_PROGRESS);
+        mHandler = new DelayedRecordHandler(this);
 
+        updateWidgetStates();
+        createDialogs();
+    }
+
+    /**
+     * Create and set Dialogs for load, and record.
+     */
+    private void createDialogs(){
+        //file
+        final EditText saveFileEditText = new EditText(this);
+        AlertDialog.Builder saveFileDialogBuilder = new AlertDialog.Builder(this);
+        saveFileDialogBuilder.setTitle("Save Image");
+        saveFileDialogBuilder.setMessage("Image Name");
+        saveFileDialogBuilder.setView(saveFileEditText);
+        saveFileDialogBuilder.setNegativeButton("Cancel", null);
+        saveFileDialogBuilder.setPositiveButton("accept", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String text = saveFileEditText.getText().toString();
+                String message = mMandelbrotView.saveCurrentImage(text);
+                Toast.makeText(MandelbrotActivity.this, message, Toast.LENGTH_SHORT).show();
+                updateWidgetStates();
+                saveFileEditText.setText("");
+            }
+        });
+        mSaveFileDialog = saveFileDialogBuilder.create();
+
+        //load
+        mLoadAnimationBuilder = new AlertDialog.Builder(this);
+        mLoadAnimationBuilder.setTitle("Load Animation");
+        mLoadListener = new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                //mCurrentAnimationDir = mMandelbrotView.getAnimationTitles()[which];
+                mMandelbrotView.load(which);
+                mAnimationView.setImageDrawable(mMandelbrotView.getAnimationDrawable());
+                updateWidgetStates();
+            }
+        };
+        mLoadAnimationBuilder.setItems(mMandelbrotView.getAnimationTitles(), mLoadListener);
+        mLoadAnimationBuilder.setNegativeButton("cancel", null);
+
+        //animation
+        AlertDialog.Builder saveAnimationDialogBuilder = new AlertDialog.Builder(this);
+        final EditText saveAnimationEditText = new EditText(this);
+        saveAnimationDialogBuilder.setTitle("Record Animation");
+        saveAnimationDialogBuilder.setMessage("Animation Name");
+        saveAnimationDialogBuilder.setView(saveAnimationEditText);
+        saveAnimationDialogBuilder.setNegativeButton("Cancel", null);
+        saveAnimationDialogBuilder.setPositiveButton("accept", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Bundle b = new Bundle();
+                b.putString(DelayedRecordHandler.FILENAME,saveAnimationEditText.getText().toString());
+                Message message = Message.obtain();
+                message.setData(b);
+                mHandler.sendMessageDelayed(message,300);
+                saveAnimationEditText.setText("");
+
+            }
+        });
+        mRecordDialog = saveAnimationDialogBuilder.create();
     }
 
 
@@ -82,7 +170,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
 
-        updateButtonState(mMandelbrotView.getState());
+        updateWidgetStates();
     }
 
 
@@ -92,7 +180,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
 
-        updateButtonState(mMandelbrotView.getState());
+        updateWidgetStates();
     }
 
 
@@ -102,7 +190,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
 
-        updateButtonState(mMandelbrotView.getState());
+        updateWidgetStates();
 
     }
 
@@ -113,44 +201,45 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
                 edgeLengthTextField, iterationLimitTextField);
 
-        updateButtonState(mMandelbrotView.getState());
+        updateWidgetStates();
     }
 
 
     public void saveButtonClick(View view) {
         Log.v(TAG, "saveButtonClick");
-        String message = mMandelbrotView.saveCurrentImage();
-        Toast.makeText(MandelbrotActivity.this, message, Toast.LENGTH_SHORT).show();
-
-        updateButtonState(mMandelbrotView.getState());
+        mSaveFileDialog.show();
+        updateWidgetStates();
     }
 
 
     public void recordButtonClick(View view) {
         Log.v(TAG, "recordButtonClick");
+        mRecordDialog.show();
+        updateWidgetStates();
+    }
 
-        updateButtonState(mMandelbrotView.getState());
-        //int fps = Integer.parseInt( frameRateTextField.getText().toString() );
-        //int duration = Integer.parseInt(recordTimeTextField.getText().toString());
-        //int numFrames = Integer.parseInt(numFramesTextField.getText().toString());
-        //mMandelbrotView.createAnimationImages(fps,duration);
 
+    public void loadButtonClick(View view) {
+        Log.v(TAG, "loadButtonClick");
+        mLoadAnimationBuilder.setItems(mMandelbrotView.getAnimationTitles(), mLoadListener);
+        AlertDialog loadDialog = mLoadAnimationBuilder.create();
+        loadDialog.show();
     }
 
 
     public void playButtonClick(View view) {
         Log.v(TAG, "playButtonClick");
-
-        updateButtonState(mMandelbrotView.getState());
-        //mMandelbrotView.playAnimation();
+        mAnimationView.setVisibility(View.VISIBLE);
+        mMandelbrotView.playAnimation();
+        updateWidgetStates();
     }
 
 
-    public void stopButtonClick(View view) {
-        Log.v(TAG, "stopButtonClick");
-
-        updateButtonState(mMandelbrotView.getState());
-        //mMandelbrotView.stopAnimation();
+    public void closeButtonClick(View view) {
+        Log.v(TAG, "closeButtonClick");
+        mAnimationView.setVisibility(View.INVISIBLE);
+        mMandelbrotView.closeAnimation();
+        updateWidgetStates();
     }
 
 
@@ -173,7 +262,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         mMandelbrotView.setModelValues(coordinateR, coordinateI, edge, iteration);
     }
 
-    //Todo: put toast strings into strings.xml
+    //Todo: put toast strings  and dialog strings into strings.xml
     //Todo: make all fields be validated when any text field hits enter
     //Todo: fix bug where view doesn't always scroll up when keyboard is made visible
     //TODO: implement toString for classes
@@ -242,7 +331,8 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
     }
 
 
-    public void updateButtonState(int state){
+    public void updateWidgetStates(){
+        int state = mMandelbrotView.getNavigationState();
         switch (state){
             case MandelbrotView.SINGLE_STATE:
                 forwardButton.setEnabled( false );
@@ -250,6 +340,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
                 deleteButton.setEnabled(  false );
                 homeButton.setEnabled(    false );
                 saveButton.setEnabled(    true );
+                recordButton.setEnabled(  false );
+                loadButton.setEnabled(    true);
+                playButton.setEnabled(    false);
+                closeButton.setEnabled(false);
                 break;
             case MandelbrotView.CENTER_STATE:
                 forwardButton.setEnabled( true );
@@ -257,6 +351,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
                 deleteButton.setEnabled(  true );
                 homeButton.setEnabled(    true );
                 saveButton.setEnabled(    true );
+                recordButton.setEnabled(  true );
+                loadButton.setEnabled(    true);
+                playButton.setEnabled(    false);
+                closeButton.setEnabled(false);
                 break;
             case MandelbrotView.END_STATE:
                 forwardButton.setEnabled( false );
@@ -264,6 +362,10 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
                 deleteButton.setEnabled(  true );
                 homeButton.setEnabled(    true );
                 saveButton.setEnabled(    true );
+                recordButton.setEnabled(  true );
+                loadButton.setEnabled(    true);
+                playButton.setEnabled(    false);
+                closeButton.setEnabled(   false);
                 break;
             case MandelbrotView.FRONT_STATE:
                 forwardButton.setEnabled( true );
@@ -271,13 +373,45 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
                 deleteButton.setEnabled(  false );
                 homeButton.setEnabled(    true );
                 saveButton.setEnabled(    true );
+                recordButton.setEnabled(  true );
+                loadButton.setEnabled(    true);
+                playButton.setEnabled(    false);
+                closeButton.setEnabled(   false);
                 break;
+            case MandelbrotView.LOADED_STATE:
+                forwardButton.setEnabled( false );
+                backButton.setEnabled(    false );
+                deleteButton.setEnabled(  false );
+                homeButton.setEnabled(    false );
+                saveButton.setEnabled(    false );
+                recordButton.setEnabled(  false );
+                loadButton.setEnabled(    false);
+                playButton.setEnabled(    true);
+                closeButton.setEnabled(   true);
+                break;
+        }
+
+        if(state==MandelbrotView.LOADED_STATE) {
+            centerRealTextField.setEnabled(false);
+            centerImaginaryTextField.setEnabled(false);
+            edgeLengthTextField.setEnabled(false);
+            iterationLimitTextField.setEnabled(false);
+            frameRateTextField.setEnabled(false);
+            recordTimeTextField.setEnabled(false);
+        }else
+        {
+            centerRealTextField.setEnabled(true);
+            centerImaginaryTextField.setEnabled(true);
+            edgeLengthTextField.setEnabled(true);
+            iterationLimitTextField.setEnabled(true);
+            frameRateTextField.setEnabled(true);
+            recordTimeTextField.setEnabled(true);
         }
     }
 
 
     /**
-     * Zooms onto a pixel locaton. Fails if pixel is not on the mandelbrot image.
+     * Zooms onto a pixel location. Fails if pixel is not on the mandelbrot image.
      *
      * @param x x pixel coordinate
      * @param y y pixel coordinate
@@ -299,7 +433,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         double y = e.getY();
 
         Log.v( TAG,"X = " + x + ", Y = " + y );
-        zoom((int)x, (int)y);
+        zoom((int) x, (int) y);
         return true;
     }
 
@@ -322,8 +456,17 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
 
 
     @Override
-    public void onProgressStart() {
+    public void onProgressStart(int maxProgress) {
+        Log.v("PRO","starting " + maxProgress);
+        // Check if no view has focus:
+        View view = this.getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+
         mProgressBar.setProgress(0);
+        mProgressBar.setMax(maxProgress);
         mProgressBar.setVisibility(View.VISIBLE);
 
         centerRealTextField.setEnabled(false);
@@ -338,22 +481,24 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         deleteButton.setEnabled(false);
         homeButton.setEnabled(false);
         saveButton.setEnabled(false);
+        loadButton.setEnabled(false);
         recordButton.setEnabled(false);
         playButton.setEnabled(false);
-        stopButton.setEnabled(false);
+        closeButton.setEnabled(false);
 
     }
 
 
     @Override
     public void onProgressUpdate(int progress) {
-        Log.v(TAG,"progress = " + progress);
+        //Log.v("PRO","progress = " + progress);
         mProgressBar.setProgress(progress);
     }
 
 
     @Override
     public void onProgressFinished() {
+        Log.v("PRO","DONE");
         mProgressBar.setVisibility(View.GONE);
         centerRealTextField.setEnabled(true);
         centerImaginaryTextField.setEnabled(true);
@@ -361,7 +506,34 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         iterationLimitTextField.setEnabled(true);
         frameRateTextField.setEnabled(true);
         recordTimeTextField.setEnabled(true);
+        updateWidgetStates();
+    }
 
-        updateButtonState(mMandelbrotView.getState());
+    /**
+     * record dialog box was closing and progressbar opening at same time would cause progress
+     * bar to remain invisible for the duration of the recording. This handler is to stagger the two
+     * operations.
+     */
+    public static class DelayedRecordHandler extends Handler {
+        private final WeakReference<MandelbrotActivity> mWeakMandelReference;
+        public static final String FILENAME = "FILENAME";
+        public DelayedRecordHandler(MandelbrotActivity activity){
+            mWeakMandelReference = new WeakReference<>(activity);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            MandelbrotActivity activity = mWeakMandelReference.get();
+            if(activity == null)
+                return;
+            Bundle b = msg.getData();
+            if(b==null)
+                return;
+            String fileName = b.getString(FILENAME);
+            int fps = Integer.parseInt(activity.frameRateTextField.getText().toString());
+            int duration = Integer.parseInt(activity.recordTimeTextField.getText().toString());
+            activity.mMandelbrotView.recordAnimation(fps, duration, fileName);
+
+        }
     }
 }
