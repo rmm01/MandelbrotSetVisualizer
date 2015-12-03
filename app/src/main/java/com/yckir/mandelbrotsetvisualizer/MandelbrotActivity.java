@@ -103,6 +103,22 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
         createDialogs();
     }
 
+    @Override
+    protected void onPause() {
+        if(mMandelbrotView.getNavigationState()==MandelbrotView.LOADED_STATE){
+            closeButtonClick(null);
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        updateWidgetStates();
+        mMandelbrotView.getModelValues(centerRealTextField, centerImaginaryTextField,
+                edgeLengthTextField, iterationLimitTextField);
+    }
+
     /**
      * Create and set Dialogs for load, and record.
      */
@@ -155,7 +171,7 @@ public class MandelbrotActivity extends AppCompatActivity implements View.OnTouc
                 b.putString(DelayedRecordHandler.FILENAME,saveAnimationEditText.getText().toString());
                 Message message = Message.obtain();
                 message.setData(b);
-                mHandler.sendMessageDelayed(message,300);
+                mHandler.sendMessageDelayed(message,700);
                 saveAnimationEditText.setText("");
 
             }

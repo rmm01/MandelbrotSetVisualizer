@@ -40,7 +40,12 @@ public class DrawBitmapTask extends AsyncTask<Bitmap, Integer, Bitmap> {
     @Override
     protected Bitmap doInBackground(Bitmap... params) {
         if(params.length==0){
-            Log.e(TAG, "error, bitmap passed to DrawBitmapTask.execute is null");
+            Log.e(TAG, "error, bitmap not passed to DrawBitmapTask.execute ");
+            return null;
+        }
+
+        if(params[0] == null){
+            Log.e(TAG, "error, bitmap passed to DrawBitmapTask.execute was null");
             return null;
         }
 

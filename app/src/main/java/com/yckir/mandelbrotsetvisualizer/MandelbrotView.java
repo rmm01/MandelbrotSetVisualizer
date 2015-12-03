@@ -9,6 +9,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -27,6 +29,14 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
     public  static final int        END_STATE                   =   2;
     public  static final int        FRONT_STATE                 =   3;
     public  static final int        LOADED_STATE                =   4;
+
+    private static final String     STATE_KEY                   =   "MANDELBROT_VIEW_STATE";
+    private static final String     NUM_MODELS_KEY              =   "MANDELBROT_VIEW_NUM_MODELS";
+    private static final String     CURRENT_MODEL_INDEX_KEY     =   "MANDELBROT_VIEW_CURRENT_MODEL_INDEX";
+    private static final String     PROGRESS_PARTS_KEY          =   "MANDELBROT_VIEW_PROGRESS_PARTS";
+    private static final String     CURRENT_DIRECTORY_KEY       =   "MANDELBROT_VIEW_CURRENT_DIRECTORY";
+    private static final String     MODEL_LIST_KEY              =   "MANDELBROT_VIEW_CURRENT_MODEL_LIST_";
+    private static final String     NULL_VALUE                  =   "MANDELBROT_VIEW_NULL";
 
     private Model                   mCurrentModel;
     private LinkedList<Model>       mModelHistory;
@@ -139,6 +149,9 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
      * indicate that the view has been drawn.
      */
     private void drawView() {
+        //Log.v(TAG, "drawView with state = " + mState + ", numModels = " + mNumModels + ", index = " +
+        //        mCurrentModelIndex + "path = " + mCurrentModel.getFileName());
+
         File currentModelFile = new File( mNavDir, mCurrentModel.getFileName());
         if(currentModelFile.exists())
             displayMandelbrotImage(currentModelFile);
@@ -377,8 +390,8 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
             return;
         }
         Utility.writeAnimationDetails(delay, lastFrameNumber, mCurrentAnimationDir);
-        mProgressListener.onProgressStart(lastFrameNumber-1);
-        createAnimationFrame(fps, lastFrameNumber,0);
+        mProgressListener.onProgressStart(lastFrameNumber - 1);
+        createAnimationFrame(fps, lastFrameNumber, 0);
     }
 
 
@@ -600,6 +613,52 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
 
 
     @Override
+    protected Parcelable onSaveInstanceState() {
+        Log.v(TAG,"onSave");
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("instanceState", super.onSaveInstanceState());
+        bundle.putInt(STATE_KEY, mState);
+        bundle.putInt(NUM_MODELS_KEY,mNumModels);
+        bundle.putInt(CURRENT_MODEL_INDEX_KEY, mCurrentModelIndex);
+        bundle.putInt(PROGRESS_PARTS_KEY, mProgressParts);
+        String path = mCurrentAnimationDir != null ? mCurrentAnimationDir.getPath() : NULL_VALUE;
+        bundle.putString(CURRENT_DIRECTORY_KEY,path);
+
+        for(int i = 0; i < mNumModels; i++){
+            mModelHistory.get(i).saveState(MODEL_LIST_KEY + i + "_",bundle);
+        }
+
+        return bundle;
+    }
+
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        Log.v(TAG, "onRestore");
+        if(state instanceof Bundle){
+            Bundle bundle = (Bundle) state;
+            state = bundle.getParcelable("instanceState");
+
+            mState = bundle.getInt(STATE_KEY);
+            mNumModels = bundle.getInt( NUM_MODELS_KEY );
+            mCurrentModelIndex = bundle.getInt( CURRENT_MODEL_INDEX_KEY );
+            mProgressParts = bundle.getInt( PROGRESS_PARTS_KEY );
+            String path = bundle.getString(CURRENT_DIRECTORY_KEY,NULL_VALUE);
+            if( !path.contentEquals( NULL_VALUE ) )
+                mCurrentAnimationDir = new File(path);
+
+            for(int i = 0; i < mNumModels; i++){
+                Model model = new Model(mImageLength);
+                model.restoreState(MODEL_LIST_KEY + i + "_", bundle);
+                mModelHistory.add(i,model);
+            }
+            mCurrentModel=mModelHistory.get(mCurrentModelIndex);
+        }
+        super.onRestoreInstanceState(state);
+    }
+
+
+    @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.v(TAG, "SurfaceCreated");
     }
@@ -610,20 +669,18 @@ public class MandelbrotView extends SurfaceView implements SurfaceHolder.Callbac
         //Todo: make it so that changing the fields on the default image does not override the default image
         //Todo: make is sot that the surface changes dosn't reset the list
         if( mWidth == width && mHeight == height ) {
-            Log.v(TAG, "surface unchanged w = " +mWidth + ", h = " +mHeight );
-            return;
+            Log.v(TAG, "surface unchanged w = " + mWidth + ", h = " + mHeight);
+        }else {
+            mHeight = height;
+            mWidth = width;
+            mImageLength = Math.min(mWidth, mHeight);
+            mPaddingX = (mWidth - mImageLength) / 2;
+
+            Log.v(TAG, "Surface Changed w = " + mWidth + ", h = " + mHeight);
         }
-        mHeight=height;
-        mWidth=width;
-        mImageLength=Math.min(mWidth,mHeight);
-        mPaddingX=(mWidth-mImageLength)/2;
-
-        Log.v(TAG, "Surface Changed w = " + mWidth + ", h = " + mHeight);
-
         //resetModelList();
 
         mCurrentModel.setNumPixels(mImageLength);
-        mCurrentModel.changeFileName(FIRST_MANDELBROT_FILE_NAME);
         mMyBitmap = Bitmap.createBitmap(mImageLength, mImageLength, Bitmap.Config.ARGB_8888);
         drawView();
     }

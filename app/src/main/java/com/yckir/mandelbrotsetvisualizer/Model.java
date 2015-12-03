@@ -6,9 +6,16 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Bundle;
 import android.util.Log;
 
 public class Model{
+    private static final String FILE_KEY            = "FILENAME";
+    private static final String ITERATION_KEY       = "ITERATION";
+    private static final String EDGE_KEY            = "EDGE";
+    private static final String REAL_KEY            = "REAL";
+    private static final String IMAGINARY_KEY       = "IMAGINARY";
+
     public  static String TAG                       =   "MODEL";
     private static double DEFAULT_CENTER_REAL       =   0;
     private static double DEFAULT_CENTER_IMAGINARY  =   0;
@@ -30,8 +37,7 @@ public class Model{
         mEdgeLength         = DEFAULT_EDGE_LENGTH;
         mIterationLimit     = DEFAULT_ITERATION_LIMIT;
         mNumPixels          = numPixels;
-
-        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION;
+        mFileName = "Mandel_"+ System.currentTimeMillis() +"_" + EXTENSION ;
     }
 
 
@@ -41,8 +47,7 @@ public class Model{
         mEdgeLength         = edgeLength;
         mIterationLimit     = iterationLimit;
         mNumPixels          = numPixels;
-
-        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION ;
+        mFileName = "Mandel_"+ System.currentTimeMillis() +"_" + EXTENSION ;
     }
 
 
@@ -196,7 +201,6 @@ public class Model{
     }
 
 
-
     /**
      * Draws the mandelbrot set onto the given canvas.
      *
@@ -308,16 +312,16 @@ public class Model{
      */
     public void setNumPixels(int numPixels){
         mNumPixels = numPixels;
-        mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION;
+        //mFileName = "Mandel_" + mNumPixels + "_" + Long.toString( System.currentTimeMillis() ) + EXTENSION;
     }
 
 
     /**
-     * change the file name. this value will be appened fo the front of "_numPixels.png"
+     * Change the file name. This value will be appended to the front of a ".png".
      * @param fileName the new name of the file
      */
     public void changeFileName(String fileName) {
-        mFileName = fileName + "_" + mNumPixels + EXTENSION;
+        mFileName = fileName + "_" + EXTENSION;
     }
 
 
@@ -359,6 +363,36 @@ public class Model{
      * @return the number of pixels in the image.
      */
     public int getNumPixels(){ return mNumPixels; }
+
+
+    /**
+     * save the state of the model to a bundle
+     * @param key the key to prefix your bundle keys with. This contains something similar to
+     *            "model_5_". This is because many models may be saved on bundle.
+     * @param bundle the bundle where the state is to be stored.
+     */
+    public void saveState(String key, Bundle bundle){
+        bundle.putString( key + FILE_KEY,      mFileName );
+        bundle.putInt(    key + ITERATION_KEY, mIterationLimit);
+        bundle.putDouble( key + EDGE_KEY,      mEdgeLength);
+        bundle.putDouble( key + REAL_KEY,      mCenterReal );
+        bundle.putDouble( key + IMAGINARY_KEY, mCenterImaginary );
+    }
+
+
+    /**
+     * Restore the state of the model from a bundle
+     * @param key the key to prefix your bundle keys with. This contains something similar to
+     *            "model_5_". This is because many models may be saved on bundle.
+     * @param bundle the bundle where the state is stored.
+     */
+    public void restoreState(String key, Bundle bundle){
+        mFileName           = bundle.getString( key + FILE_KEY);
+        mIterationLimit     = bundle.getInt(    key + ITERATION_KEY);
+        mEdgeLength         = bundle.getDouble( key + EDGE_KEY );
+        mCenterReal         = bundle.getDouble( key + REAL_KEY );
+        mCenterImaginary    = bundle.getDouble( key + IMAGINARY_KEY);
+    }
 
 
     /**
